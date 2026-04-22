@@ -21,6 +21,8 @@
       body {
         margin: 0;
         min-height: 100vh;
+        display: flex;
+        flex-direction: column;
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial,
           sans-serif;
         background: radial-gradient(circle at top, #1c2540 0%, var(--page-bg) 55%);
@@ -28,6 +30,7 @@
       }
 
       main {
+        flex: 1;
         width: min(980px, 100%);
         margin: 0 auto;
         padding: 1rem;
@@ -62,7 +65,7 @@
         background-image: var(--card-image, linear-gradient(140deg, #2f4778, #481f56));
         background-size: cover;
         background-position: top center;
-        filter: blur(9px) saturate(1.15);
+        filter: blur(8px) saturate(1.15);
         transform: scale(1.06);
       }
 
@@ -113,6 +116,18 @@
         border: 0;
       }
 
+      footer {
+        width: min(980px, 100%);
+        margin: 0 auto;
+        padding: 0.25rem 1rem 1rem;
+        color: var(--text-sub);
+        font-size: 0.92rem;
+      }
+
+      footer a {
+        color: #c8d3ff;
+      }
+
       @media (min-width: 760px) {
         .games {
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -125,25 +140,52 @@
       <h1>Magic: The Gathering Daily Games</h1>
       <section id="games" class="games" aria-label="List of daily games"></section>
     </main>
+    <footer>
+      Have a game you want to see? Email
+      <a href="mailto:suggestions@mtgdailygames.com">suggestions@mtgdailygames.com</a>
+    </footer>
 
     <script>
       const dailyGames = [
         {
           title: "Spellify",
-          description: "Guess the MTG card from clues and sharpen your daily card knowledge.",
-          url: "https://spellify.fun/",
+          description: "Daily MTG game collection page on EDHREC.",
+          url: "https://edhrec.com/games/spellify",
         },
         {
-          title: "Enchant Wordle",
-          description:
-            "A Wordle-style daily puzzle focused on Magic cards, mechanics, and set vocabulary.",
-          url: "https://enchantwordle.com/",
+          title: "Enchant Worldle",
+          description: "A daily MTG-themed guessing game.",
+          url: "https://enchantworldle.com/",
         },
         {
           title: "Asmrandle",
-          description:
-            "Identify the card from cropped art and subtle hints in a quick daily challenge.",
+          description: "Identify the card from art and hints in a daily challenge.",
           url: "https://asmrandle.com/",
+        },
+        {
+          title: "Crossword",
+          description: "Daily MTG crossword game on EDHREC.",
+          url: "https://edhrec.com/games/crossword",
+        },
+        {
+          title: "EDHRankle Daily",
+          description: "A daily ranking and guessing style MTG challenge.",
+          url: "https://edhrankle.com/daily",
+        },
+        {
+          title: "Guess the Magic Card",
+          description: "Guess the card in this daily challenge.",
+          url: "https://guessthemagiccard.com/653",
+        },
+        {
+          title: "Magicdoku",
+          description: "A Sudoku-style daily puzzle for MTG players.",
+          url: "https://magicdoku.web.app/index.html",
+        },
+        {
+          title: "Card Clash Synergy",
+          description: "Test your MTG deck-building and synergy intuition.",
+          url: "https://cardclashgames.com/synergy",
         },
       ];
 
