@@ -102,6 +102,17 @@
         opacity: 0.9;
       }
 
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+      }
+
       @media (min-width: 760px) {
         .games {
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -139,8 +150,45 @@
       const fallbackGradient = "linear-gradient(140deg, #2f4778, #481f56)";
       const gamesContainer = document.getElementById("games");
 
-      function getLivePreviewUrl(websiteUrl) {
-        return `https://image.thum.io/get/width/1200/noanimate/${encodeURIComponent(websiteUrl)}`;
+      function getLivePreviewUrls(websiteUrl) {
+        const encoded = encodeURIComponent(websiteUrl);
+        return [
+          `https://image.thum.io/get/width/1200/noanimate/${encoded}`,
+          `https://s.wordpress.com/mshots/v1/${encoded}?w=1200`,
+        ];
+      }
+
+      function loadPreviewWithFallback(card, status, websiteUrl) {
+        const sources = getLivePreviewUrls(websiteUrl);
+
+        function trySource(index) {
+          if (index >= sources.length) {
+            status.textContent = "Live preview unavailable. Fallback background shown.";
+            return;
+          }
+
+          const img = new Image();
+          const timeout = setTimeout(() => {
+            img.src = "";
+            trySource(index + 1);
+          }, 8000);
+
+          img.onload = () => {
+            clearTimeout(timeout);
+            const safeSrc = img.src.replace(/["'\\\n\r\f]/g, "\\$&");
+            card.style.setProperty("--card-image", `url("${safeSrc}")`);
+            status.textContent = "Live preview loaded.";
+          };
+
+          img.onerror = () => {
+            clearTimeout(timeout);
+            trySource(index + 1);
+          };
+
+          img.src = sources[index];
+        }
+
+        trySource(0);
       }
 
       function createGameCard(game) {
@@ -166,18 +214,17 @@
         host.className = "game-url";
         host.textContent = new URL(game.url).hostname;
 
-        content.append(title, description, host);
+        const previewStatus = document.createElement("span");
+        previewStatus.className = "sr-only";
+        previewStatus.setAttribute("aria-live", "polite");
+        previewStatus.textContent = "Loading live preview.";
+
+        content.append(title, description, host, previewStatus);
 
         card.appendChild(content);
         gamesContainer.appendChild(card);
 
-        const img = new Image();
-        img.onload = () => {
-          const safeSrc = img.src.replace(/["\\\n\r\f]/g, "\\$&");
-          card.style.setProperty("--card-image", `url("${safeSrc}")`);
-        };
-        img.onerror = () => console.warn(`Preview image could not be loaded for ${game.url}`);
-        img.src = getLivePreviewUrl(game.url);
+        loadPreviewWithFallback(card, previewStatus, game.url);
       }
 
       dailyGames.forEach(createGameCard);
