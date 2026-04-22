@@ -154,17 +154,29 @@
         const content = document.createElement("div");
         content.className = "game-card-content";
 
-        content.innerHTML = `
-          <h2 class="game-title">${game.title}</h2>
-          <p class="game-description">${game.description}</p>
-          <span class="game-url">${new URL(game.url).hostname}</span>
-        `;
+        const title = document.createElement("h2");
+        title.className = "game-title";
+        title.textContent = game.title;
+
+        const description = document.createElement("p");
+        description.className = "game-description";
+        description.textContent = game.description;
+
+        const host = document.createElement("span");
+        host.className = "game-url";
+        host.textContent = new URL(game.url).hostname;
+
+        content.append(title, description, host);
 
         card.appendChild(content);
         gamesContainer.appendChild(card);
 
         const img = new Image();
-        img.onload = () => card.style.setProperty("--card-image", `url("${img.src}")`);
+        img.onload = () => {
+          const safeSrc = img.src.replace(/["\\\n\r\f]/g, "\\$&");
+          card.style.setProperty("--card-image", `url("${safeSrc}")`);
+        };
+        img.onerror = () => console.warn(`Preview image could not be loaded for ${game.url}`);
         img.src = getLivePreviewUrl(game.url);
       }
 
