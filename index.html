@@ -150,6 +150,7 @@
       const fallbackGradient = "linear-gradient(140deg, #2f4778, #481f56)";
       const PREVIEW_WIDTH = 1200;
       const PREVIEW_LOAD_TIMEOUT_MS = 8000;
+      const TRUSTED_PREVIEW_HOSTS = new Set(["image.thum.io", "s.wordpress.com"]);
       const gamesContainer = document.getElementById("games");
 
       function getLivePreviewUrls(websiteUrl) {
@@ -177,9 +178,21 @@
 
           img.onload = () => {
             clearTimeout(timeout);
-            const safeSrc = img.src.replace(/["'`\\\n\r\f]/g, "\\$&");
-            card.style.setProperty("--card-image", `url("${safeSrc}")`);
-            status.textContent = "Live preview loaded.";
+            try {
+              const previewUrl = new URL(img.src);
+              const isTrustedSource =
+                previewUrl.protocol === "https:" && TRUSTED_PREVIEW_HOSTS.has(previewUrl.hostname);
+
+              if (isTrustedSource) {
+                card.style.setProperty("--card-image", `url("${previewUrl.href}")`);
+                status.textContent = "Live preview loaded.";
+                return;
+              }
+            } catch {
+              // Keep fallback when URL parsing fails.
+            }
+
+            status.textContent = "Live preview unavailable. Fallback background shown.";
           };
 
           img.onerror = () => {
