@@ -16,20 +16,19 @@
         --page-bg: #030303;
         --surface-bg: #111;
         --card-border: #fafafa;
-        --card-overlay: rgba(17, 17, 17, 0.72);
         --text-main: #c5c5c5;
         --text-sub: #aeaeae;
         --footer-bg: rgba(0, 0, 0, 0.9);
         --footer-clearance: 4.25rem;
+        --card-min-width: 260px;
       }
 
       @media (prefers-color-scheme: light) {
         :root {
           color-scheme: light;
-          --page-bg: #f4f4f4;
-          --surface-bg: #ffffff;
+          --page-bg: #d8d8d8;
+          --surface-bg: #efefef;
           --card-border: #b0b0b0;
-          --card-overlay: rgba(255, 255, 255, 0.72);
           --text-main: #1a1a1a;
           --text-sub: #555555;
           --footer-bg: rgba(240, 240, 240, 0.95);
@@ -53,84 +52,165 @@
 
       main {
         flex: 1;
-        width: min(980px, 100%);
+        width: min(1060px, 100%);
         margin: 0 auto;
         padding: 1rem 1rem var(--footer-clearance);
       }
 
       h1 {
-        margin: 0.25rem 0 1rem;
+        margin: 0.25rem 0 1.25rem;
         font-size: clamp(1.45rem, 4.8vw, 2rem);
         font-family: "Cinzel", Georgia, serif;
         letter-spacing: 0.03em;
       }
 
+      /* ── Games grid ── */
       .games {
         display: grid;
-        gap: 0.9rem;
+        gap: 1.2rem;
+        grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width), 1fr));
       }
 
+      /* ── MTG extended-art card frame ── */
       .game-card {
-        position: relative;
-        display: block;
-        overflow: hidden;
-        border: 1px solid var(--card-border);
-        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        aspect-ratio: 5 / 7;
+        width: 100%;
+        border-radius: 14px;
+        border: 8px solid #1a1a1a;
+        box-shadow:
+          0 0 0 1.5px #5c5c5c,
+          inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+          0 8px 32px rgba(0, 0, 0, 0.75);
         text-decoration: none;
         color: inherit;
-        min-height: 138px;
+        overflow: hidden;
+        background: #1a1a1a;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
         transform: translateZ(0);
-        background: var(--surface-bg);
       }
 
-      .game-card::before {
-        content: "";
-        position: absolute;
-        inset: -8px;
+      .game-card:hover,
+      .game-card:focus-visible {
+        transform: translateY(-4px) scale(1.025);
+        box-shadow:
+          0 0 0 1.5px #888,
+          inset 0 0 0 1px rgba(255, 255, 255, 0.13),
+          0 18px 52px rgba(0, 0, 0, 0.9);
+        outline: none;
+      }
+
+      /* Name bar */
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 5px 9px;
+        background: linear-gradient(180deg, #313131 0%, #272727 100%);
+        border-bottom: 1.5px solid #4e4e4e;
+        flex-shrink: 0;
+      }
+
+      .card-name {
+        font-family: "Cinzel", Georgia, serif;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #ededed;
+        letter-spacing: 0.04em;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Art area — no blur */
+      .card-art {
+        flex: 1;
+        min-height: 0;
         background-image: var(--card-image, linear-gradient(140deg, #2f4778, #481f56));
         background-size: cover;
         background-position: top center;
-        filter: blur(8px) saturate(1.15);
-        transform: scale(1.06);
       }
 
-      .game-card::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: var(--card-overlay);
+      /* Type line */
+      .card-type-line {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 9px;
+        background: linear-gradient(180deg, #282828 0%, #222 100%);
+        border-top: 1.5px solid #4e4e4e;
+        border-bottom: 1px solid #333;
+        flex-shrink: 0;
       }
 
-      .game-card-content {
-        position: relative;
-        z-index: 1;
-        padding: 1rem;
-      }
-
-      .game-title {
-        margin: 0 0 0.35rem;
-        font-size: 1.2rem;
+      .card-type-text {
         font-family: "Cinzel", Georgia, serif;
-        letter-spacing: 0.02em;
-        line-height: 1.2;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+        font-size: 0.6rem;
+        color: #bbb;
+        letter-spacing: 0.05em;
+        font-style: italic;
       }
 
-      .game-description {
-        margin: 0;
-        color: var(--text-sub);
-        font-size: 0.95rem;
+      .card-set-symbol {
+        font-size: 0.72rem;
+        opacity: 0.65;
+      }
+
+      /* Parchment text box */
+      .card-text-box {
+        padding: 7px 10px 5px;
+        background: linear-gradient(180deg, #c8c8bc 0%, #b9b9ad 100%);
+        border-top: 1px solid #888;
+        flex-shrink: 0;
+      }
+
+      .card-description {
+        margin: 0 0 3px;
+        font-family: "Crimson Text", Georgia, serif;
+        font-size: 0.8rem;
         line-height: 1.35;
-        max-width: 58ch;
-        margin-inline: auto;
+        color: #1a1a1a;
+        font-style: italic;
+        text-align: left;
       }
 
-      .game-url {
-        display: inline-block;
-        margin-top: 0.55rem;
-        font-size: 0.78rem;
-        color: var(--text-sub);
-        opacity: 0.9;
+      .card-url-text {
+        display: block;
+        font-size: 0.6rem;
+        color: #444;
+        font-style: normal;
+        text-align: left;
+      }
+
+      /* Bottom stats bar */
+      .card-footer-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 3px 9px;
+        background: #181818;
+        border-top: 1px solid #333;
+        flex-shrink: 0;
+      }
+
+      .card-footer-left {
+        font-size: 0.55rem;
+        color: #666;
+        font-family: "Cinzel", Georgia, serif;
+        letter-spacing: 0.03em;
+      }
+
+      .card-footer-right {
+        font-size: 0.6rem;
+        color: #888;
+        font-family: "Cinzel", Georgia, serif;
+        font-weight: 700;
+        border: 1px solid #4a4a4a;
+        border-radius: 3px;
+        padding: 0 4px;
+        background: rgba(255, 255, 255, 0.04);
       }
 
       .sr-only {
@@ -161,12 +241,6 @@
 
       footer a {
         color: var(--text-main);
-      }
-
-      @media (min-width: 760px) {
-        .games {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
       }
     </style>
   </head>
@@ -291,29 +365,61 @@
         card.rel = "noopener noreferrer";
         card.style.setProperty("--card-image", fallbackGradient);
 
-        const content = document.createElement("div");
-        content.className = "game-card-content";
+        // Name bar
+        const header = document.createElement("div");
+        header.className = "card-header";
+        const cardName = document.createElement("h2");
+        cardName.className = "card-name";
+        cardName.textContent = game.title;
+        header.appendChild(cardName);
 
-        const title = document.createElement("h2");
-        title.className = "game-title";
-        title.textContent = game.title;
+        // Art area (no blur — image set via --card-image CSS variable; decorative)
+        const art = document.createElement("div");
+        art.className = "card-art";
+        art.setAttribute("aria-hidden", "true");
 
+        // Type line
+        const typeLine = document.createElement("div");
+        typeLine.className = "card-type-line";
+        const typeText = document.createElement("span");
+        typeText.className = "card-type-text";
+        typeText.textContent = "Daily MTG Game";
+        const setSymbol = document.createElement("span");
+        setSymbol.className = "card-set-symbol";
+        setSymbol.setAttribute("aria-hidden", "true");
+        setSymbol.textContent = "⚔";
+        typeLine.append(typeText, setSymbol);
+
+        // Parchment text box
+        const textBox = document.createElement("div");
+        textBox.className = "card-text-box";
         const description = document.createElement("p");
-        description.className = "game-description";
+        description.className = "card-description";
         description.textContent = game.description;
+        const urlSpan = document.createElement("span");
+        urlSpan.className = "card-url-text";
+        urlSpan.textContent = new URL(game.url).hostname;
+        textBox.append(description, urlSpan);
 
-        const host = document.createElement("span");
-        host.className = "game-url";
-        host.textContent = new URL(game.url).hostname;
+        // Bottom stats bar
+        const footerBar = document.createElement("div");
+        footerBar.className = "card-footer-bar";
+        const footerLeft = document.createElement("span");
+        footerLeft.className = "card-footer-left";
+        footerLeft.textContent = "MTG Daily Games";
+        const footerRight = document.createElement("span");
+        footerRight.className = "card-footer-right";
+        footerRight.setAttribute("aria-hidden", "true");
+        footerRight.textContent = "∞";
+        footerBar.append(footerLeft, footerRight);
 
+        // Screen-reader preview status
         const previewStatus = document.createElement("span");
         previewStatus.className = "sr-only";
         previewStatus.setAttribute("aria-live", "polite");
         previewStatus.textContent = "Loading live preview.";
 
-        content.append(title, description, host, previewStatus);
-
-        card.appendChild(content);
+        card.append(header, art, typeLine, textBox, footerBar, previewStatus);
         gamesContainer.appendChild(card);
 
         loadPreviewWithFallback(card, previewStatus, game.url);
