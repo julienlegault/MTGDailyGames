@@ -20,7 +20,7 @@
         --text-sub: #aeaeae;
         --footer-bg: rgba(0, 0, 0, 0.9);
         --footer-clearance: 4.25rem;
-        --card-min-width: 240px;
+        --card-min-width: 120px;
         /* MTG card frame palette (artifact silver) */
         --frame-dark: #101010;
         --frame-silver: linear-gradient(180deg, #dcdcd4 0%, #c8c8c0 45%, #b8b8b0 100%);
@@ -83,7 +83,7 @@
         display: flex;
         flex-direction: column;
         aspect-ratio: 5 / 7;
-        width: 100%;
+        width: 50%;
         /* Dark card frame — padding creates the border effect */
         background:
           repeating-linear-gradient(
@@ -496,7 +496,7 @@
         const footerLeft = document.createElement("span");
         footerLeft.textContent = `${String(index + 1).padStart(3, "0")} • EN`;
         const footerRight = document.createElement("span");
-        footerRight.textContent = `⊂ ${new URL(game.url).hostname}`;
+        footerRight.textContent = `${new URL(game.url).hostname}`;
         footerStrip.append(footerLeft, footerRight);
         card.appendChild(footerStrip);
 
