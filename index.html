@@ -85,7 +85,15 @@
         aspect-ratio: 5 / 7;
         width: 100%;
         /* Dark card frame — padding creates the border effect */
-        background: linear-gradient(160deg, #1c1c1a 0%, var(--frame-dark) 100%);
+        background:
+          repeating-linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.014) 0px,
+            rgba(255, 255, 255, 0.014) 1px,
+            transparent 1px,
+            transparent 6px
+          ),
+          linear-gradient(160deg, #1c1c1a 0%, var(--frame-dark) 100%);
         border-radius: 18px;
         /* 8px frame on sides/top, 28px at bottom for the footer strip */
         padding: 8px 8px 28px;
@@ -126,16 +134,31 @@
         align-items: center;
         justify-content: space-between;
         gap: 6px;
-        padding: 3px 6px 3px 8px;
-        background: var(--frame-silver);
+        padding: 4px 6px 4px 9px;
+        background:
+          repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.11) 0px,
+            rgba(255, 255, 255, 0.11) 1px,
+            transparent 1px,
+            transparent 4px
+          ),
+          repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.055) 0px,
+            rgba(0, 0, 0, 0.055) 1px,
+            transparent 1px,
+            transparent 4px
+          ),
+          linear-gradient(180deg, #dcdcd4 0%, #c8c8c0 45%, #b8b8b0 100%);
         border-bottom: 1px solid #888;
-        min-height: 22px;
+        min-height: 26px;
       }
 
       .card-name {
         margin: 0;
         font-family: "Cinzel", Georgia, serif;
-        font-size: 0.78rem;
+        font-size: 0.83rem;
         font-weight: 700;
         color: #111;
         letter-spacing: 0.02em;
@@ -148,15 +171,15 @@
       /* Mana-cost circle (decorative, matches the "3" in the reference card) */
       .card-mana-cost {
         flex-shrink: 0;
-        width: 17px;
-        height: 17px;
+        width: 20px;
+        height: 20px;
         border-radius: 50%;
         background: radial-gradient(circle at 38% 35%, #d8d8d0, #868680);
         border: 1.5px solid #444;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.55rem;
+        font-size: 0.58rem;
         font-weight: 700;
         font-family: "Cinzel", Georgia, serif;
         color: #111;
@@ -172,6 +195,30 @@
         background-position: top center;
       }
 
+      /* ── Grey textured middle border between art and type line ── */
+      .card-art-border {
+        flex-shrink: 0;
+        height: 7px;
+        background:
+          repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.13) 0px,
+            rgba(255, 255, 255, 0.13) 1px,
+            transparent 1px,
+            transparent 4px
+          ),
+          repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.07) 0px,
+            rgba(0, 0, 0, 0.07) 1px,
+            transparent 1px,
+            transparent 4px
+          ),
+          linear-gradient(180deg, #d6d6ce 0%, #bcbcb4 50%, #b0b0a8 100%);
+        border-top: 1px solid #aaa;
+        border-bottom: 1px solid #555;
+      }
+
       /* ── Type line: dark gunmetal with silver borders ── */
       .card-type-line {
         flex-shrink: 0;
@@ -180,15 +227,14 @@
         justify-content: space-between;
         gap: 4px;
         padding: 0 8px;
-        min-height: 20px;
+        min-height: 22px;
         background: var(--frame-typeline);
-        border-top: 1.5px solid var(--frame-silver-border);
         border-bottom: 1.5px solid var(--frame-silver-border);
       }
 
       .card-type-text {
         font-family: "Cinzel", Georgia, serif;
-        font-size: 0.55rem;
+        font-size: 0.63rem;
         font-weight: 700;
         color: #ccc;
         letter-spacing: 0.04em;
@@ -197,28 +243,28 @@
         text-overflow: ellipsis;
       }
 
-      /* Set rarity symbol — gold like a Rare card */
-      .card-set-icon {
-        flex-shrink: 0;
-        font-size: 0.6rem;
-        color: #c8a84a;
-      }
-
-      /* ── Text box: light grey with subtle diagonal texture ── */
+      /* ── Text box: light grey with diagonal crosshatch texture ── */
       .card-text-box {
         flex-shrink: 0;
         position: relative;
         /* ~25% of the inner content height */
         flex-basis: 25%;
         overflow: hidden;
-        padding: 7px 9px 24px;
+        padding: 8px 10px 9px;
         background:
           repeating-linear-gradient(
             -45deg,
-            rgba(0, 0, 0, 0.013) 0px,
-            rgba(0, 0, 0, 0.013) 1px,
+            rgba(0, 0, 0, 0.038) 0px,
+            rgba(0, 0, 0, 0.038) 1px,
             transparent 1px,
             transparent 5px
+          ),
+          repeating-linear-gradient(
+            45deg,
+            rgba(0, 0, 0, 0.022) 0px,
+            rgba(0, 0, 0, 0.022) 1px,
+            transparent 1px,
+            transparent 8px
           ),
           var(--frame-textbox);
       }
@@ -226,27 +272,10 @@
       .card-description {
         margin: 0;
         font-family: "Crimson Text", Georgia, serif;
-        font-size: 0.77rem;
+        font-size: 0.82rem;
         line-height: 1.35;
         color: #111;
         text-align: left;
-      }
-
-      /* ── P/T badge — silver box at bottom-right of text box ── */
-      .card-pt-box {
-        position: absolute;
-        bottom: 4px;
-        right: 6px;
-        background: var(--frame-silver);
-        border: 1.5px solid var(--frame-silver-border);
-        border-radius: 4px;
-        padding: 1px 7px;
-        font-family: "Cinzel", Georgia, serif;
-        font-size: 0.6rem;
-        font-weight: 700;
-        color: #111;
-        line-height: 1.4;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
       }
 
       /* ── Footer strip inside the dark outer frame ── */
@@ -437,31 +466,28 @@
         art.className = "card-art";
         art.setAttribute("aria-hidden", "true");
 
+        // Grey textured middle border between art and type line
+        const artBorder = document.createElement("div");
+        artBorder.className = "card-art-border";
+        artBorder.setAttribute("aria-hidden", "true");
+
         // Type line — dark gunmetal, silver borders
         const typeLine = document.createElement("div");
         typeLine.className = "card-type-line";
         const typeText = document.createElement("span");
         typeText.className = "card-type-text";
         typeText.textContent = "Daily Game — MTG";
-        const setIcon = document.createElement("span");
-        setIcon.className = "card-set-icon";
-        setIcon.setAttribute("aria-hidden", "true");
-        setIcon.textContent = "◆";
-        typeLine.append(typeText, setIcon);
+        typeLine.append(typeText);
 
-        // Text box — grey textured, description + P/T badge
+        // Text box — grey textured, description
         const textBox = document.createElement("div");
         textBox.className = "card-text-box";
         const description = document.createElement("p");
         description.className = "card-description";
         description.textContent = game.description;
-        const ptBox = document.createElement("span");
-        ptBox.className = "card-pt-box";
-        ptBox.setAttribute("aria-hidden", "true");
-        ptBox.textContent = "∞/∞";
-        textBox.append(description, ptBox);
+        textBox.append(description);
 
-        inner.append(header, art, typeLine, textBox);
+        inner.append(header, art, artBorder, typeLine, textBox);
         card.appendChild(inner);
 
         // Footer strip in the dark outer frame (card number + artist/hostname)
