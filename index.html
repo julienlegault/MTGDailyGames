@@ -3,7 +3,60 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MTG Daily Games</title>
+    <title>MTG Daily Games – Free Magic: The Gathering Online Daily Games</title>
+    <meta name="description" content="Your one-stop hub for free Magic: The Gathering daily games. Play MTG daily puzzles, word games, card guessing games, and more — updated every day for MTG fans." />
+    <meta name="keywords" content="MTG daily games, magic the gathering daily games, free magic games, MTG online games, MTG dailies, magic the gathering puzzles, MTG wordle, MTG card game, magic the gathering free games" />
+    <link rel="canonical" href="https://mtgdailygames.com/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mtgdailygames.com/" />
+    <meta property="og:title" content="MTG Daily Games – Free Magic: The Gathering Online Daily Games" />
+    <meta property="og:description" content="Your one-stop hub for free Magic: The Gathering daily games. Play MTG daily puzzles, word games, card guessing games, and more — updated every day for MTG fans." />
+    <meta property="og:site_name" content="MTG Daily Games" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="MTG Daily Games – Free Magic: The Gathering Online Daily Games" />
+    <meta name="twitter:description" content="Your one-stop hub for free Magic: The Gathering daily games. Play MTG daily puzzles, word games, card guessing games, and more." />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://mtgdailygames.com/#website",
+          "url": "https://mtgdailygames.com/",
+          "name": "MTG Daily Games",
+          "description": "A curated hub of free daily Magic: The Gathering online games and puzzles.",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://mtgdailygames.com/?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "ItemList",
+          "name": "Free Magic: The Gathering Daily Games",
+          "description": "Daily MTG games including word puzzles, card-guessing games, crosswords, and more.",
+          "url": "https://mtgdailygames.com/",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Spellify", "url": "https://edhrec.com/games/spellify" },
+            { "@type": "ListItem", "position": 2, "name": "Enchant Worldle", "url": "https://enchantworldle.com/" },
+            { "@type": "ListItem", "position": 3, "name": "Asmrandle", "url": "https://asmrandle.com/" },
+            { "@type": "ListItem", "position": 4, "name": "EDHREC Crossword", "url": "https://edhrec.com/games/crossword" },
+            { "@type": "ListItem", "position": 5, "name": "EDHRankle", "url": "https://edhrankle.com/daily" },
+            { "@type": "ListItem", "position": 6, "name": "Guess the Magic Card", "url": "https://guessthemagiccard.com/" },
+            { "@type": "ListItem", "position": 7, "name": "Magicdoku", "url": "https://magicdoku.web.app/index.html" },
+            { "@type": "ListItem", "position": 8, "name": "Card Clash Synergy", "url": "https://cardclashgames.com/synergy" }
+          ]
+        }
+      ]
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -64,10 +117,18 @@
       }
 
       h1 {
-        margin: 0.25rem 0 1.25rem;
+        margin: 0.25rem 0 0.5rem;
         font-size: clamp(1.45rem, 4.8vw, 2rem);
         font-family: "Cinzel", Georgia, serif;
         letter-spacing: 0.03em;
+      }
+
+      .page-intro {
+        margin: 0 auto 1.25rem;
+        max-width: 640px;
+        font-size: 1rem;
+        line-height: 1.5;
+        color: var(--text-sub);
       }
 
       /* ── Games grid ── */
@@ -335,6 +396,7 @@
   <body>
     <main>
       <h1>Magic: The Gathering Daily Games</h1>
+      <p class="page-intro">A free daily hub for MTG fans — word puzzles, card-guessing games, crosswords, and more. New challenges every day.</p>
       <section id="games" class="games" aria-label="List of daily games"></section>
     </main>
     <footer>
