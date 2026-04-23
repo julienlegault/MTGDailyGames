@@ -16,20 +16,25 @@
         --page-bg: #030303;
         --surface-bg: #111;
         --card-border: #fafafa;
-        --card-overlay: rgba(17, 17, 17, 0.72);
         --text-main: #c5c5c5;
         --text-sub: #aeaeae;
         --footer-bg: rgba(0, 0, 0, 0.9);
         --footer-clearance: 4.25rem;
+        --card-min-width: 240px;
+        /* MTG card frame palette (artifact silver) */
+        --frame-dark: #101010;
+        --frame-silver: linear-gradient(180deg, #dcdcd4 0%, #c8c8c0 45%, #b8b8b0 100%);
+        --frame-silver-border: #7a7a72;
+        --frame-typeline: linear-gradient(180deg, #272725 0%, #1d1d1b 100%);
+        --frame-textbox: linear-gradient(180deg, #c4c4bc 0%, #b6b6ae 50%, #c0c0b8 100%);
       }
 
       @media (prefers-color-scheme: light) {
         :root {
           color-scheme: light;
-          --page-bg: #f4f4f4;
-          --surface-bg: #ffffff;
+          --page-bg: #d8d8d8;
+          --surface-bg: #efefef;
           --card-border: #b0b0b0;
-          --card-overlay: rgba(255, 255, 255, 0.72);
           --text-main: #1a1a1a;
           --text-sub: #555555;
           --footer-bg: rgba(240, 240, 240, 0.95);
@@ -53,84 +58,210 @@
 
       main {
         flex: 1;
-        width: min(980px, 100%);
+        width: min(1060px, 100%);
         margin: 0 auto;
         padding: 1rem 1rem var(--footer-clearance);
       }
 
       h1 {
-        margin: 0.25rem 0 1rem;
+        margin: 0.25rem 0 1.25rem;
         font-size: clamp(1.45rem, 4.8vw, 2rem);
         font-family: "Cinzel", Georgia, serif;
         letter-spacing: 0.03em;
       }
 
+      /* ── Games grid ── */
       .games {
         display: grid;
-        gap: 0.9rem;
+        gap: 1.4rem;
+        grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width), 1fr));
       }
 
+      /* ══ Outer card frame — dark like a physical MTG card ══ */
       .game-card {
         position: relative;
-        display: block;
-        overflow: hidden;
-        border: 1px solid var(--card-border);
-        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        aspect-ratio: 5 / 7;
+        width: 100%;
+        /* Dark card frame — padding creates the border effect */
+        background: linear-gradient(160deg, #1c1c1a 0%, var(--frame-dark) 100%);
+        border-radius: 18px;
+        /* 8px frame on sides/top, 28px at bottom for the footer strip */
+        padding: 8px 8px 28px;
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.06),
+          0 10px 48px rgba(0, 0, 0, 0.8);
         text-decoration: none;
         color: inherit;
-        min-height: 138px;
+        overflow: hidden;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
         transform: translateZ(0);
-        background: var(--surface-bg);
       }
 
-      .game-card::before {
-        content: "";
-        position: absolute;
-        inset: -8px;
+      .game-card:hover,
+      .game-card:focus-visible {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.13),
+          0 20px 64px rgba(0, 0, 0, 0.9);
+        outline: none;
+      }
+
+      /* ── Inner bordered area (clips art to edges) ── */
+      .card-inner {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1.5px solid var(--frame-silver-border);
+      }
+
+      /* ── Name bar: silver/chrome (artifact card colour) ── */
+      .card-header {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        padding: 3px 6px 3px 8px;
+        background: var(--frame-silver);
+        border-bottom: 1px solid #888;
+        min-height: 22px;
+      }
+
+      .card-name {
+        margin: 0;
+        font-family: "Cinzel", Georgia, serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #111;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1;
+      }
+
+      /* Mana-cost circle (decorative, matches the "3" in the reference card) */
+      .card-mana-cost {
+        flex-shrink: 0;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 38% 35%, #d8d8d0, #868680);
+        border: 1.5px solid #444;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.55rem;
+        font-weight: 700;
+        font-family: "Cinzel", Georgia, serif;
+        color: #111;
+        box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5), 0 1px 2px rgba(0, 0, 0, 0.45);
+      }
+
+      /* ── Art area: full-bleed, no blur (extended-art) ── */
+      .card-art {
+        flex: 1;
+        min-height: 0;
         background-image: var(--card-image, linear-gradient(140deg, #2f4778, #481f56));
         background-size: cover;
         background-position: top center;
-        filter: blur(8px) saturate(1.15);
-        transform: scale(1.06);
       }
 
-      .game-card::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: var(--card-overlay);
+      /* ── Type line: dark gunmetal with silver borders ── */
+      .card-type-line {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px;
+        padding: 0 8px;
+        min-height: 20px;
+        background: var(--frame-typeline);
+        border-top: 1.5px solid var(--frame-silver-border);
+        border-bottom: 1.5px solid var(--frame-silver-border);
       }
 
-      .game-card-content {
-        position: relative;
-        z-index: 1;
-        padding: 1rem;
-      }
-
-      .game-title {
-        margin: 0 0 0.35rem;
-        font-size: 1.2rem;
+      .card-type-text {
         font-family: "Cinzel", Georgia, serif;
-        letter-spacing: 0.02em;
-        line-height: 1.2;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+        font-size: 0.55rem;
+        font-weight: 700;
+        color: #ccc;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
-      .game-description {
+      /* Set rarity symbol — gold like a Rare card */
+      .card-set-icon {
+        flex-shrink: 0;
+        font-size: 0.6rem;
+        color: #c8a84a;
+      }
+
+      /* ── Text box: light grey with subtle diagonal texture ── */
+      .card-text-box {
+        flex-shrink: 0;
+        position: relative;
+        /* ~25% of the inner content height */
+        flex-basis: 25%;
+        overflow: hidden;
+        padding: 7px 9px 24px;
+        background:
+          repeating-linear-gradient(
+            -45deg,
+            rgba(0, 0, 0, 0.013) 0px,
+            rgba(0, 0, 0, 0.013) 1px,
+            transparent 1px,
+            transparent 5px
+          ),
+          var(--frame-textbox);
+      }
+
+      .card-description {
         margin: 0;
-        color: var(--text-sub);
-        font-size: 0.95rem;
+        font-family: "Crimson Text", Georgia, serif;
+        font-size: 0.77rem;
         line-height: 1.35;
-        max-width: 58ch;
-        margin-inline: auto;
+        color: #111;
+        text-align: left;
       }
 
-      .game-url {
-        display: inline-block;
-        margin-top: 0.55rem;
-        font-size: 0.78rem;
-        color: var(--text-sub);
-        opacity: 0.9;
+      /* ── P/T badge — silver box at bottom-right of text box ── */
+      .card-pt-box {
+        position: absolute;
+        bottom: 4px;
+        right: 6px;
+        background: var(--frame-silver);
+        border: 1.5px solid var(--frame-silver-border);
+        border-radius: 4px;
+        padding: 1px 7px;
+        font-family: "Cinzel", Georgia, serif;
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: #111;
+        line-height: 1.4;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+      }
+
+      /* ── Footer strip inside the dark outer frame ── */
+      .card-footer-strip {
+        position: absolute;
+        bottom: 5px;
+        left: 9px;
+        right: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.42rem;
+        color: #777;
+        font-family: "Crimson Text", Georgia, serif;
+        letter-spacing: 0.01em;
       }
 
       .sr-only {
@@ -161,12 +292,6 @@
 
       footer a {
         color: var(--text-main);
-      }
-
-      @media (min-width: 760px) {
-        .games {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
       }
     </style>
   </head>
@@ -283,7 +408,7 @@
         trySource(0);
       }
 
-      function createGameCard(game) {
+      function createGameCard(game, index) {
         const card = document.createElement("a");
         card.className = "game-card";
         card.href = game.url;
@@ -291,35 +416,76 @@
         card.rel = "noopener noreferrer";
         card.style.setProperty("--card-image", fallbackGradient);
 
-        const content = document.createElement("div");
-        content.className = "game-card-content";
+        // ── Inner bordered area ──
+        const inner = document.createElement("div");
+        inner.className = "card-inner";
 
-        const title = document.createElement("h2");
-        title.className = "game-title";
-        title.textContent = game.title;
+        // Name bar: silver gradient, game title + mana-cost circle
+        const header = document.createElement("div");
+        header.className = "card-header";
+        const cardName = document.createElement("h2");
+        cardName.className = "card-name";
+        cardName.textContent = game.title;
+        const manaCost = document.createElement("span");
+        manaCost.className = "card-mana-cost";
+        manaCost.setAttribute("aria-hidden", "true");
+        manaCost.textContent = String(index + 1);
+        header.append(cardName, manaCost);
 
+        // Art area — extended art, full-bleed, no blur
+        const art = document.createElement("div");
+        art.className = "card-art";
+        art.setAttribute("aria-hidden", "true");
+
+        // Type line — dark gunmetal, silver borders
+        const typeLine = document.createElement("div");
+        typeLine.className = "card-type-line";
+        const typeText = document.createElement("span");
+        typeText.className = "card-type-text";
+        typeText.textContent = "Daily Game — MTG";
+        const setIcon = document.createElement("span");
+        setIcon.className = "card-set-icon";
+        setIcon.setAttribute("aria-hidden", "true");
+        setIcon.textContent = "◆";
+        typeLine.append(typeText, setIcon);
+
+        // Text box — grey textured, description + P/T badge
+        const textBox = document.createElement("div");
+        textBox.className = "card-text-box";
         const description = document.createElement("p");
-        description.className = "game-description";
+        description.className = "card-description";
         description.textContent = game.description;
+        const ptBox = document.createElement("span");
+        ptBox.className = "card-pt-box";
+        ptBox.setAttribute("aria-hidden", "true");
+        ptBox.textContent = "∞/∞";
+        textBox.append(description, ptBox);
 
-        const host = document.createElement("span");
-        host.className = "game-url";
-        host.textContent = new URL(game.url).hostname;
+        inner.append(header, art, typeLine, textBox);
+        card.appendChild(inner);
 
+        // Footer strip in the dark outer frame (card number + artist/hostname)
+        const footerStrip = document.createElement("div");
+        footerStrip.className = "card-footer-strip";
+        const footerLeft = document.createElement("span");
+        footerLeft.textContent = `${String(index + 1).padStart(3, "0")} • EN`;
+        const footerRight = document.createElement("span");
+        footerRight.textContent = `⊂ ${new URL(game.url).hostname}`;
+        footerStrip.append(footerLeft, footerRight);
+        card.appendChild(footerStrip);
+
+        // Screen-reader preview status
         const previewStatus = document.createElement("span");
         previewStatus.className = "sr-only";
         previewStatus.setAttribute("aria-live", "polite");
         previewStatus.textContent = "Loading live preview.";
+        card.appendChild(previewStatus);
 
-        content.append(title, description, host, previewStatus);
-
-        card.appendChild(content);
         gamesContainer.appendChild(card);
-
         loadPreviewWithFallback(card, previewStatus, game.url);
       }
 
-      dailyGames.forEach(createGameCard);
+      dailyGames.forEach((game, index) => createGameCard(game, index));
     </script>
   </body>
 </html>
