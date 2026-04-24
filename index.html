@@ -456,9 +456,14 @@
       const TRUSTED_PREVIEW_HOSTS = new Set(["image.thum.io", "s.wordpress.com"]);
       const gamesContainer = document.getElementById("games");
 
-      // Match emoji sequences: base Extended_Pictographic + optional variation selector,
-      // skin tone modifier, or a single level of ZWJ composition.
+      // Match emoji sequences: base Extended_Pictographic + optional variation selector
+      // (U+FE00–FE0F), combining enclosing keycap (U+20E3), skin-tone modifier
+      // (U+1F3FB–1F3FF), or a single level of ZWJ composition.
       const EMOJI_RE = /\p{Extended_Pictographic}(?:[\u{FE00}-\u{FE0F}]|\u{20E3}|[\u{1F3FB}-\u{1F3FF}])?(?:\u{200D}\p{Extended_Pictographic}(?:[\u{FE00}-\u{FE0F}]|\u{20E3}|[\u{1F3FB}-\u{1F3FF}])?)?/gu;
+
+      const SCORE_FONT_START = 1.4;  // rem — initial size when rendering a score
+      const SCORE_FONT_MIN   = 0.3;  // rem — never shrink below this
+      const SCORE_FONT_STEP  = 0.05; // rem — amount to reduce per iteration
 
       function parseScore(text, scoreType) {
         if (scoreType === "number") {
@@ -478,10 +483,10 @@
       }
 
       function fitScoreText(el, container) {
-        let size = 1.4; // rem
+        let size = SCORE_FONT_START;
         el.style.fontSize = size + "rem";
-        while (size > 0.3 && (el.scrollHeight > container.clientHeight || el.scrollWidth > container.clientWidth)) {
-          size = parseFloat((size - 0.05).toFixed(2));
+        while (size > SCORE_FONT_MIN && (el.scrollHeight > container.clientHeight || el.scrollWidth > container.clientWidth)) {
+          size = parseFloat((size - SCORE_FONT_STEP).toFixed(2));
           el.style.fontSize = size + "rem";
         }
       }
@@ -579,7 +584,7 @@
               while (textBox.firstChild) textBox.removeChild(textBox.firstChild);
               const scoreEl = document.createElement("p");
               scoreEl.className = "card-description card-score";
-              scoreEl.textContent = score !== null ? score : "Could not parse score.";
+              scoreEl.textContent = score !== null ? score : "Could not read score — please paste the complete result text from the game.";
               textBox.append(scoreEl);
               requestAnimationFrame(() => fitScoreText(scoreEl, textBox));
             });
