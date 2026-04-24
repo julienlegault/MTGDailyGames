@@ -192,7 +192,7 @@
       }
 
       .card-score {
-        white-space: pre;
+        white-space: pre-wrap;
         line-height: 1.3;
       }
 
@@ -663,11 +663,48 @@
         card.className = "game-card";
         card.style.setProperty("--card-image", fallbackGradient);
 
-        // Top-zone click: navigate to the game URL for any click outside the text box
+        // Shows the score-entry form in the text box when conditions are met.
+        // Returns true if the form was newly shown, false if conditions were not met.
+        function maybeShowScoreForm() {
+          if (game.scoreType === "none") return false;
+          if (textBox.classList.contains("has-form")) return false; // already showing
+          const currentScores = loadScores();
+          if (currentScores[index]) return false; // score already recorded
+
+          description.remove();
+          textBox.classList.add("has-form");
+          const tapInput = document.createElement("textarea");
+          tapInput.className = "tap-input";
+          tapInput.placeholder = "Paste results here";
+          tapInput.setAttribute("aria-label", `Result for ${game.title}`);
+          const tapSubmit = document.createElement("button");
+          tapSubmit.type = "button";
+          tapSubmit.className = "tap-submit";
+          tapSubmit.textContent = "Submit";
+          tapSubmit.addEventListener("click", (e) => {
+            e.stopPropagation(); // prevent textBox navigate-handler from re-running
+            const raw = tapInput.value.trim();
+            if (!raw) return;
+            const score = parseScore(raw, game.scoreType);
+            textBox.classList.remove("has-form");
+            while (textBox.firstChild) textBox.removeChild(textBox.firstChild);
+            const scoreEl = document.createElement("p");
+            scoreEl.className = "card-description card-score";
+            scoreEl.textContent = score !== null ? score : "Could not read score — please paste the complete result text from the game.";
+            textBox.append(scoreEl);
+            requestAnimationFrame(() => fitScoreText(scoreEl, textBox));
+            if (score !== null) saveScore(index, score);
+          });
+          textBox.append(tapInput, tapSubmit);
+          return true;
+        }
+
+        // Top-zone click: navigate to the game URL and switch bottom to results-entry mode
         card.addEventListener("click", (e) => {
           if (e.target.closest(".card-text-box")) return; // text box handles its own clicks
           if (e.target.closest("a")) return;              // card-name <a> handles its own navigation — avoid double window.open
           window.open(game.url, "_blank", "noopener,noreferrer");
+          maybeShowScoreForm();
         });
 
         // ── Inner bordered area ──
@@ -717,38 +754,7 @@
             e.stopPropagation(); // form is active — don't bubble to card handler
             return;
           }
-          if (game.scoreType !== "none") {
-            const currentScores = loadScores();
-            if (!currentScores[index]) {
-              // No score yet — show the paste form
-              description.remove();
-              textBox.classList.add("has-form");
-              const tapInput = document.createElement("textarea");
-              tapInput.className = "tap-input";
-              tapInput.placeholder = "Paste results here";
-              tapInput.setAttribute("aria-label", `Result for ${game.title}`);
-              const tapSubmit = document.createElement("button");
-              tapSubmit.type = "button";
-              tapSubmit.className = "tap-submit";
-              tapSubmit.textContent = "Submit";
-              tapSubmit.addEventListener("click", (e) => {
-                e.stopPropagation(); // prevent textBox navigate-handler from re-running
-                const raw = tapInput.value.trim();
-                if (!raw) return;
-                const score = parseScore(raw, game.scoreType);
-                textBox.classList.remove("has-form");
-                while (textBox.firstChild) textBox.removeChild(textBox.firstChild);
-                const scoreEl = document.createElement("p");
-                scoreEl.className = "card-description card-score";
-                scoreEl.textContent = score !== null ? score : "Could not read score — please paste the complete result text from the game.";
-                textBox.append(scoreEl);
-                requestAnimationFrame(() => fitScoreText(scoreEl, textBox));
-                if (score !== null) saveScore(index, score);
-              });
-              textBox.append(tapInput, tapSubmit);
-              return;
-            }
-          }
+          if (maybeShowScoreForm()) return;
           // Description or stored-score is showing — navigate to the game
           window.open(game.url, "_blank", "noopener,noreferrer");
         });
@@ -803,6 +809,8 @@
         });
       }
 
+      let cachedFrameImg = null;
+
       async function copyScoresImage() {
         const scores = loadScores();
         const sortedKeys = Object.keys(scores).sort((a, b) => Number(a) - Number(b));
@@ -815,7 +823,7 @@
         const GAP     = 16;
         const PAD     = 24;
         const HDR_H   = 44;  // height of the date label row above the cards
-        const DPR     = 2;   // render at 2× for sharpness
+        const DPR     = 3;   // render at 3× for sharpness
 
         const cols    = Math.min(sortedKeys.length, COLS);
         const rows    = Math.ceil(sortedKeys.length / COLS);
@@ -827,6 +835,8 @@
         canvas.height = cssH * DPR;
         const ctx     = canvas.getContext("2d");
         ctx.scale(DPR, DPR);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
 
         // Background
         ctx.fillStyle = "#111";
@@ -839,8 +849,9 @@
         ctx.textBaseline = "middle";
         ctx.fillText(`MTG Daily Games \u2014 ${getGameDayLabel()}`, cssW / 2, PAD + HDR_H / 2);
 
-        // Load card frame once (local file — no CORS issue)
-        const frameImg = await loadImage("cardframe.jpg");
+        // Load card frame once (local file — no CORS issue); cache for faster repeat copies
+        if (!cachedFrameImg) cachedFrameImg = await loadImage("cardframe.jpg");
+        const frameImg = cachedFrameImg;
         await document.fonts.ready;
 
         // ── Card-frame layout fractions (must match the CSS) ──
@@ -879,7 +890,7 @@
           ctx.font         = `bold 13px 'Cinzel', Georgia, serif`;
           ctx.textAlign    = "left";
           ctx.textBaseline = "middle";
-          ctx.fillText(game.title, cx + iL + 5, cy + iT + hdrH / 2, iW - 10);
+          ctx.fillText(game.title, cx + iL + 5, cy + iT + hdrH / 2 + 3, iW - 10);
 
           // Type line
           ctx.font      = `bold 9px 'Cinzel', Georgia, serif`;
