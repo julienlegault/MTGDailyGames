@@ -158,8 +158,8 @@
         cursor: pointer;
       }
 
-      .card-slot:not(.tapped) .game-card:hover,
-      .card-slot:not(.tapped) .game-card:focus-visible {
+      .game-item:not(.tapped) .game-card:hover,
+      .game-item:not(.tapped) .game-card:focus-visible {
         transform: translateY(-5px) scale(1.02);
         box-shadow:
           0 0 0 1px rgba(255, 255, 255, 0.13),
@@ -167,69 +167,60 @@
         outline: none;
       }
 
-      .card-slot.tapped .game-card {
+      .game-item.tapped .game-card {
         transform: rotate(90deg);
         cursor: default;
       }
 
-      /* ══ Tap input overlay — appears above card when tapped ══ */
+      /* ══ Tap input row — appears below card when tapped ══ */
       .tap-input-area {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 50%;
-        z-index: 10;
-        display: flex;
-        flex-direction: column;
+        display: none;
+        flex-direction: row;
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
-        padding: 0.75rem 0.5rem;
-        background: rgba(10, 10, 10, 0.88);
-        border-radius: 10px 10px 0 0;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.25s ease 0.4s;
+        padding: 0.5rem 0.25rem 0;
+        background: transparent;
       }
 
-      .card-slot.tapped .tap-input-area {
-        opacity: 1;
-        pointer-events: auto;
+      .game-item.tapped .tap-input-area {
+        display: flex;
       }
 
       .tap-input {
-        width: 85%;
+        flex: 1;
+        min-width: 0;
         padding: 0.4rem 0.6rem;
         font-family: "Crimson Text", Georgia, serif;
         font-size: 0.9rem;
-        background: #1e1e1e;
-        color: #e8e8e8;
-        border: 1px solid #555;
+        background: transparent;
+        color: var(--text-main);
+        border: 1px solid #888;
         border-radius: 6px;
         outline: none;
       }
 
       .tap-input:focus {
-        border-color: #aaa;
+        border-color: #ccc;
       }
 
       .tap-submit {
+        flex-shrink: 0;
         padding: 0.35rem 1.1rem;
         font-family: "Cinzel", Georgia, serif;
         font-size: 0.72rem;
         font-weight: 700;
         letter-spacing: 0.05em;
-        background: #2a2a2a;
-        color: #ccc;
-        border: 1px solid #666;
+        background: transparent;
+        color: var(--text-main);
+        border: 1px solid #888;
         border-radius: 6px;
         cursor: pointer;
-        transition: background 0.15s ease, color 0.15s ease;
+        transition: border-color 0.15s ease, color 0.15s ease;
       }
 
       .tap-submit:hover {
-        background: #3a3a3a;
+        border-color: #ccc;
         color: #fff;
       }
 
@@ -515,18 +506,22 @@
       }
 
       function createGameCard(game, index) {
-        // ── Slot: maintains grid position while card rotates inside ──
+        // ── Item: grid cell containing the slot and the input row ──
+        const item = document.createElement("div");
+        item.className = "game-item";
+
+        // ── Slot: maintains aspect ratio while card rotates inside ──
         const slot = document.createElement("div");
         slot.className = "card-slot";
 
-        // ── Tap input area (shown above card when tapped) ──
+        // ── Tap input row (shown below card when tapped) ──
         const tapArea = document.createElement("div");
         tapArea.className = "tap-input-area";
         const tapInput = document.createElement("input");
         tapInput.type = "text";
         tapInput.className = "tap-input";
-        tapInput.placeholder = "Your guess…";
-        tapInput.setAttribute("aria-label", `Guess for ${game.title}`);
+        tapInput.placeholder = "paste result here";
+        tapInput.setAttribute("aria-label", `Result for ${game.title}`);
         const tapSubmit = document.createElement("button");
         tapSubmit.type = "button";
         tapSubmit.className = "tap-submit";
@@ -540,15 +535,13 @@
         card.rel = "noopener noreferrer";
         card.style.setProperty("--card-image", fallbackGradient);
 
-        card.addEventListener("click", (e) => {
-          e.preventDefault();
-          slot.classList.add("tapped");
-          setTimeout(() => tapInput.focus(), 650);
+        card.addEventListener("click", () => {
+          item.classList.add("tapped");
         });
 
-        slot.addEventListener("keydown", (e) => {
-          if (e.key === "Escape" && slot.classList.contains("tapped")) {
-            slot.classList.remove("tapped");
+        item.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && item.classList.contains("tapped")) {
+            item.classList.remove("tapped");
             card.focus();
           }
         });
@@ -611,8 +604,9 @@
         previewStatus.textContent = "Loading live preview.";
         card.appendChild(previewStatus);
 
-        slot.append(tapArea, card);
-        gamesContainer.appendChild(slot);
+        slot.append(card);
+        item.append(slot, tapArea);
+        gamesContainer.appendChild(item);
         loadPreviewWithFallback(card, previewStatus, game.url);
       }
 
