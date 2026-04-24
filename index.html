@@ -663,18 +663,22 @@
         card.style.setProperty("--card-image", fallbackGradient);
 
         if (game.scoreType !== "none") {
-          card.addEventListener("click", () => {
+          card.addEventListener("click", (e) => {
             if (textBox.classList.contains("has-form")) return;
             // If a score is already stored for today, don't show the form
             const currentScores = loadScores();
             if (currentScores[index]) return;
+            // Stop navigation so the form can be interacted with
+            e.preventDefault();
             description.remove();
             textBox.classList.add("has-form");
+            // Remove the href so the card is no longer a link while the form is open;
+            // only the art and title remain visually clickable via the restored link below.
+            card.removeAttribute("href");
             const tapInput = document.createElement("textarea");
             tapInput.className = "tap-input";
             tapInput.placeholder = "Paste results here";
             tapInput.setAttribute("aria-label", `Result for ${game.title}`);
-            // Prevent textarea clicks from following the card's anchor link
             tapInput.addEventListener("click", (e) => e.stopPropagation());
             const tapSubmit = document.createElement("button");
             tapSubmit.type = "button";
@@ -693,6 +697,8 @@
               textBox.append(scoreEl);
               requestAnimationFrame(() => fitScoreText(scoreEl, textBox));
               if (score !== null) saveScore(index, score);
+              // Restore the link now that the form is gone
+              card.href = game.url;
             });
             textBox.append(tapInput, tapSubmit);
           });
