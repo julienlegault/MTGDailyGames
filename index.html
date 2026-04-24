@@ -462,6 +462,11 @@
     </footer>
 
     <script>
+      // ── Link-click tracking (fire-and-forget) ──
+      function trackLinkClick() {
+        fetch("https://api.counterapi.dev/v2/mtgdailygames/links-clicked/up").catch(() => {});
+      }
+
       // ── Daily reset at 1 am New York time (handles EST/EDT automatically) ──
       function getGameDay() {
         const now = new Date();
@@ -743,6 +748,7 @@
           if (e.target.closest(".card-text-box")) return; // text box handles its own clicks
           if (e.target.closest("a")) return;              // card-name <a> handles its own navigation — avoid double window.open
           window.open(game.url, "_blank", "noopener,noreferrer");
+          trackLinkClick();
           maybeShowScoreForm();
         });
 
@@ -759,6 +765,7 @@
         cardName.target = "_blank";
         cardName.rel = "noopener noreferrer";
         cardName.textContent = game.title;
+        cardName.addEventListener("click", () => trackLinkClick());
         header.append(cardName);
 
         // Art area — extended art, full-bleed, no blur
@@ -807,6 +814,7 @@
           if (maybeShowScoreForm()) return;
           // Description or stored-score is showing — navigate to the game
           window.open(game.url, "_blank", "noopener,noreferrer");
+          trackLinkClick();
         });
 
         // If a score was stored for today, display it immediately
