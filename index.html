@@ -777,7 +777,7 @@
                 return;
               }
               tapInput.setCustomValidity("");
-              score = `${num} guesses`;
+              score = `${num} ${num === 1 ? "guess" : "guesses"}`;
             } else {
               score = parseScore(raw, game.scoreType);
             }
