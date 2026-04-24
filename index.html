@@ -670,9 +670,6 @@
             if (currentScores[index]) return;
             description.remove();
             textBox.classList.add("has-form");
-            // Remove the href so the card is no longer a link while the form is open;
-            // only the art and title remain visually clickable via the restored link below.
-            card.removeAttribute("href");
             const tapInput = document.createElement("textarea");
             tapInput.className = "tap-input";
             tapInput.placeholder = "Paste results here";
@@ -695,8 +692,6 @@
               textBox.append(scoreEl);
               requestAnimationFrame(() => fitScoreText(scoreEl, textBox));
               if (score !== null) saveScore(index, score);
-              // Restore the link now that the form is gone
-              card.href = game.url;
             });
             textBox.append(tapInput, tapSubmit);
           });
