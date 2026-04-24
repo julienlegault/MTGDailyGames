@@ -259,9 +259,41 @@
       .card-art {
         flex: 1;
         min-height: 0;
+        position: relative;
         background-image: var(--card-image, linear-gradient(140deg, #2f4778, #481f56));
         background-size: cover;
         background-position: top center;
+        overflow: hidden;
+      }
+
+      /* ── Warning overlay shown when live preview times out ── */
+      .card-art-warning {
+        display: none;
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.3em;
+        pointer-events: none;
+      }
+
+      .card-art-warning .warning-icon {
+        font-size: 1.8em;
+        color: #ffd700;
+        line-height: 1;
+      }
+
+      .card-art-warning .warning-text {
+        font-family: "Cinzel", Georgia, serif;
+        font-size: 0.58rem;
+        font-weight: 700;
+        color: #ffd700;
+        text-align: center;
+        padding: 0 0.5em;
+        line-height: 1.25;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
       }
 
       /* ── Art border: hidden — the frame image handles this ── */
@@ -499,66 +531,77 @@
           description: "Guess the card hangman-style.",
           url: "https://edhrec.com/games/spellify",
           scoreType: "emoji",
+          image: "spellify.png",
         },
         {
           title: "Enchant Worldle",
           description: "A play on Wordle, yellow means close green means correct.",
           url: "https://enchantworldle.com/",
           scoreType: "number",
+          image: "enchantWordle.png",
         },
         {
           title: "Asmrandle",
           description: "Pick the more popular of two cards based on EDHREC inclusion percentage.",
           url: "https://asmrandle.com/",
           scoreType: "emoji",
+          image: "asmrandle.png",
         },
         {
           title: "EDHREC Crossword",
           description: "Daily MTG crossword game on EDHREC.",
           url: "https://edhrec.com/games/crossword",
           scoreType: "none",
+          image: "edhrecCrossword.png",
         },
         {
           title: "Commander Codex",
           description: "A wordle-like game by Archidekt.",
           url: "https://commandercodex.com/",
           scoreType: "emoji",
+          image: "commanderCodex.png",
         },
         {
           title: "EDHRankle",
           description: "Similar to Asmrandle, but limited to only commanders.",
           url: "https://edhrankle.com/daily",
           scoreType: "none",
+          image: "edhrankle.png",
         },
         {
           title: "Guess the Magic Card",
           description: "Narrow down the card based on its attributes.",
           url: "https://guessthemagiccard.com/",
           scoreType: "emoji",
+          image: "guessTheMagicCard.png",
         },
         {
           title: "Magicdoku",
           description: "A Sudoku-style daily puzzle for MTG players.",
           url: "https://magicdoku.web.app/index.html",
           scoreType: "emoji",
+          image: "magicdoku.png",
         },
         {
           title: "Card Clash Synergy",
           description: "Test your MTG deck-building and synergy intuition.",
           url: "https://cardclashgames.com/synergy",
           scoreType: "emoji",
+          image: "synergy.png",
         },
         {
           title: "Possibility Storm",
           description: "Daily find-lethal puzzles.",
           url: "https://www.possibilitystorm.com/",
           scoreType: "none",
+          image: "possibilityStorm.png",
         },
       ];
 
       const fallbackGradient = "linear-gradient(140deg, #2f4778, #481f56)";
       const PREVIEW_WIDTH = 1200;
-      const PREVIEW_LOAD_TIMEOUT = 8000;
+      const PREVIEW_SOURCE_TIMEOUT = 6000;
+      const PREVIEW_TOTAL_TIMEOUT = 10000;
       const TRUSTED_PREVIEW_HOSTS = new Set(["image.thum.io", "s.wordpress.com"]);
       const gamesContainer = document.getElementById("games");
 
@@ -605,46 +648,62 @@
         ];
       }
 
-      function loadPreviewWithFallback(card, status, websiteUrl) {
+      function loadPreviewWithFallback(card, warningOverlay, status, websiteUrl) {
         const sources = getLivePreviewUrls(websiteUrl);
+        let currentImg = null;
+        let sourceTimeout = null;
+        let settled = false;
+
+        const overallTimer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          if (currentImg) currentImg.src = "";
+          if (sourceTimeout) clearTimeout(sourceTimeout);
+          warningOverlay.style.display = "flex";
+          status.textContent = "Live preview timed out.";
+        }, PREVIEW_TOTAL_TIMEOUT);
 
         function trySource(index) {
+          if (settled) return;
           if (index >= sources.length) {
-            status.textContent = "Live preview unavailable. Fallback background shown.";
             return;
           }
 
-          const img = new Image();
-          const timeout = setTimeout(() => {
-            img.src = "";
+          currentImg = new Image();
+          sourceTimeout = setTimeout(() => {
+            if (settled) return;
+            currentImg.src = "";
             trySource(index + 1);
-          }, PREVIEW_LOAD_TIMEOUT);
+          }, PREVIEW_SOURCE_TIMEOUT);
 
-          img.onload = () => {
-            clearTimeout(timeout);
+          currentImg.onload = () => {
+            clearTimeout(sourceTimeout);
+            if (settled) return;
             try {
-              const previewUrl = new URL(img.src);
+              const previewUrl = new URL(currentImg.src);
               const isTrustedSource =
                 previewUrl.protocol === "https:" && TRUSTED_PREVIEW_HOSTS.has(previewUrl.hostname);
 
               if (isTrustedSource) {
+                clearTimeout(overallTimer);
+                settled = true;
                 card.style.setProperty("--card-image", `url("${previewUrl.href}")`);
                 status.textContent = "Live preview loaded.";
                 return;
               }
             } catch {
-              // Keep fallback when URL parsing fails.
+              // Keep uploaded image when URL parsing fails.
             }
 
-            status.textContent = "Live preview unavailable. Fallback background shown.";
-          };
-
-          img.onerror = () => {
-            clearTimeout(timeout);
             trySource(index + 1);
           };
 
-          img.src = sources[index];
+          currentImg.onerror = () => {
+            clearTimeout(sourceTimeout);
+            trySource(index + 1);
+          };
+
+          currentImg.src = sources[index];
         }
 
         trySource(0);
@@ -661,7 +720,7 @@
 
         const card = document.createElement("div");
         card.className = "game-card";
-        card.style.setProperty("--card-image", fallbackGradient);
+        card.style.setProperty("--card-image", `url("${game.image}")`);
 
         // Shows the score-entry form in the text box when conditions are met.
         // Returns true if the form was newly shown, false if conditions were not met.
@@ -726,6 +785,17 @@
         const art = document.createElement("div");
         art.className = "card-art";
         art.setAttribute("aria-hidden", "true");
+
+        const artWarning = document.createElement("div");
+        artWarning.className = "card-art-warning";
+        const warningIcon = document.createElement("span");
+        warningIcon.className = "warning-icon";
+        warningIcon.textContent = "⚠";
+        const warningText = document.createElement("span");
+        warningText.className = "warning-text";
+        warningText.textContent = "Game may be unavailable";
+        artWarning.append(warningIcon, warningText);
+        art.appendChild(artWarning);
 
         // Grey textured middle border between art and type line
         const artBorder = document.createElement("div");
@@ -792,7 +862,7 @@
         slot.append(card);
         item.append(slot);
         gamesContainer.appendChild(item);
-        loadPreviewWithFallback(card, previewStatus, game.url);
+        loadPreviewWithFallback(card, artWarning, previewStatus, game.url);
       }
 
       const initialScores = loadScores();
@@ -810,6 +880,35 @@
       }
 
       let cachedFrameImg = null;
+      const cachedGameImgs = {};
+
+      // Draw an image into a canvas rect with cover behaviour (top-aligned).
+      // Scales the image so it completely fills the rect while preserving its aspect
+      // ratio: the wider dimension is cropped equally on both sides; the taller
+      // dimension is cropped from the bottom (top-aligned, matching background-position: top center).
+      function drawImageCover(ctx, img, x, y, w, h) {
+        if (img.naturalWidth === 0 || img.naturalHeight === 0) return;
+        const iAspect = img.naturalWidth / img.naturalHeight;
+        const bAspect = w / h;
+        let sx, sy, sw, sh;
+        if (iAspect > bAspect) {
+          sh = img.naturalHeight;
+          sw = sh * bAspect;
+          sx = (img.naturalWidth - sw) / 2;
+          sy = 0;
+        } else {
+          sw = img.naturalWidth;
+          sh = sw / bAspect;
+          sx = 0;
+          sy = 0;
+        }
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, w, h);
+        ctx.clip();
+        ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+        ctx.restore();
+      }
 
       async function copyScoresImage() {
         const scores = loadScores();
@@ -852,6 +951,15 @@
         // Load card frame once (local file — no CORS issue); cache for faster repeat copies
         if (!cachedFrameImg) cachedFrameImg = await loadImage("cardframe.jpg");
         const frameImg = cachedFrameImg;
+
+        // Preload game images for all scored cards
+        await Promise.all(sortedKeys.map(async (key) => {
+          const game = dailyGames[Number(key)];
+          if (game && game.image && !cachedGameImgs[game.image]) {
+            cachedGameImgs[game.image] = await loadImage(game.image);
+          }
+        }));
+
         await document.fonts.ready;
 
         // ── Card-frame layout fractions (must match the CSS) ──
@@ -883,6 +991,15 @@
           } else {
             ctx.fillStyle = "#2f4778";
             ctx.fillRect(cx, cy, CARD_W, CARD_H);
+          }
+
+          // Draw uploaded game screenshot in the art area (cover, top-aligned)
+          const gameImg = game && game.image ? cachedGameImgs[game.image] : null;
+          if (gameImg && gameImg.naturalWidth > 0) {
+            drawImageCover(ctx, gameImg, cx + iL, cy + iT + hdrH, iW, artH);
+          } else {
+            ctx.fillStyle = "#2f4778";
+            ctx.fillRect(cx + iL, cy + iT + hdrH, iW, artH);
           }
 
           // Card name
