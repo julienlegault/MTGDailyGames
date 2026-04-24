@@ -270,7 +270,7 @@
         overflow: hidden;
       }
 
-      /* ── Warning overlay shown when live preview times out ── */
+      /* ── Warning overlay shown when game may be unavailable ── */
       .card-art-warning {
         display: none;
         position: absolute;
@@ -610,10 +610,7 @@
       ];
 
       const fallbackGradient = "linear-gradient(140deg, #2f4778, #481f56)";
-      const PREVIEW_WIDTH = 1200;
-      const PREVIEW_SOURCE_TIMEOUT = 6000;
-      const PREVIEW_TOTAL_TIMEOUT = 10000;
-      const PREVIEW_MIN_WIDTH = 400;
+      const AVAILABILITY_CHECK_TIMEOUT = 10000;
       const gamesContainer = document.getElementById("games");
 
       // Match emoji sequences: base Extended_Pictographic + optional variation selector
@@ -651,99 +648,19 @@
         }
       }
 
-      function getLivePreviewUrls(websiteUrl) {
-        const encoded = encodeURIComponent(websiteUrl);
-        return [
-          `https://image.thum.io/get/width/${PREVIEW_WIDTH}/noanimate/${encoded}`,
-          `https://s.wordpress.com/mshots/v1/${encoded}?w=${PREVIEW_WIDTH}`,
-        ];
-      }
-
-      function loadPreviewWithFallback(card, warningOverlay, status, websiteUrl) {
-        const sources = getLivePreviewUrls(websiteUrl);
-        let settled = false;
-        let currentAbortCtrl = null;
-
-        const overallTimer = setTimeout(() => {
-          if (settled) return;
-          settled = true;
-          if (currentAbortCtrl) currentAbortCtrl.abort();
-          warningOverlay.style.display = "flex";
-          status.textContent = "Live preview timed out.";
-        }, PREVIEW_TOTAL_TIMEOUT);
-
-        async function trySource(index) {
-          if (settled) return;
-          if (index >= sources.length) return;
-
-          const url = sources[index];
-          const abortCtrl = new AbortController();
-          currentAbortCtrl = abortCtrl;
-          let timedOut = false;
-
-          const sourceTimeoutId = setTimeout(() => {
-            timedOut = true;
-            abortCtrl.abort();
-            if (!settled) trySource(index + 1);
-          }, PREVIEW_SOURCE_TIMEOUT);
-
-          try {
-            const response = await fetch(url, { signal: abortCtrl.signal });
-            clearTimeout(sourceTimeoutId);
-            if (settled || timedOut) return;
-
-            if (!response.ok) {
-              trySource(index + 1);
-              return;
-            }
-
-            // thum.io exposes the original page's HTTP status; skip previews where
-            // the underlying site returned an error (e.g. a Cloudflare block page).
-            const originStatus = response.headers.get("x-origin-status");
-            if (originStatus && parseInt(originStatus, 10) >= 400) {
-              trySource(index + 1);
-              return;
-            }
-
-            const blob = await response.blob();
-            if (settled || timedOut) return;
-            if (!blob.type.startsWith("image/")) {
-              trySource(index + 1);
-              return;
-            }
-
-            const objectUrl = URL.createObjectURL(blob);
-            const img = new Image();
-            img.onload = () => {
-              if (settled || timedOut) {
-                URL.revokeObjectURL(objectUrl);
-                return;
-              }
-              // Reject loading placeholders that are too small (e.g. WordPress mshots spinner).
-              if (img.naturalWidth < PREVIEW_MIN_WIDTH) {
-                URL.revokeObjectURL(objectUrl);
-                trySource(index + 1);
-                return;
-              }
-              clearTimeout(overallTimer);
-              settled = true;
-              // The object URL is intentionally kept alive: the CSS background
-              // image requires it to remain valid for the lifetime of the page.
-              card.style.setProperty("--card-image", `url("${objectUrl}")`);
-              status.textContent = "Live preview loaded.";
-            };
-            img.onerror = () => {
-              URL.revokeObjectURL(objectUrl);
-              if (!settled && !timedOut) trySource(index + 1);
-            };
-            img.src = objectUrl;
-          } catch {
-            clearTimeout(sourceTimeoutId);
-            if (!settled && !timedOut) trySource(index + 1);
-          }
+      async function checkGameAvailability(artWarning, url) {
+        const abortCtrl = new AbortController();
+        const timeoutId = setTimeout(() => abortCtrl.abort(), AVAILABILITY_CHECK_TIMEOUT);
+        try {
+          // no-cors means the response is opaque (status unreadable); we only
+          // detect network-level failures, not HTTP errors like 404 or 500.
+          await fetch(url, { mode: "no-cors", signal: abortCtrl.signal });
+          clearTimeout(timeoutId);
+        } catch {
+          clearTimeout(timeoutId);
+          artWarning.style.display = "flex";
+          artWarning.setAttribute("aria-live", "assertive");
         }
-
-        trySource(0);
       }
 
       function createGameCard(game, index, storedScore) {
@@ -915,17 +832,10 @@
         footerStrip.append(footerLeft, footerRight);
         card.appendChild(footerStrip);
 
-        // Screen-reader preview status
-        const previewStatus = document.createElement("span");
-        previewStatus.className = "sr-only";
-        previewStatus.setAttribute("aria-live", "polite");
-        previewStatus.textContent = "Loading live preview.";
-        card.appendChild(previewStatus);
-
         slot.append(card);
         item.append(slot);
         gamesContainer.appendChild(item);
-        loadPreviewWithFallback(card, artWarning, previewStatus, game.url);
+        checkGameAvailability(artWarning, game.url);
       }
 
       const initialScores = loadScores();
