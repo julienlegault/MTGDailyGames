@@ -779,9 +779,144 @@
       dailyGames.forEach((game, index) => createGameCard(game, index, initialScores[index]?.score ?? null));
       updateShareBar(initialScores);
 
+      // ── Image helpers ──
+      function loadImage(src) {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => resolve(img);
+          img.src = src;
+        });
+      }
+
+      async function copyScoresImage() {
+        const scores = loadScores();
+        const sortedKeys = Object.keys(scores).sort((a, b) => Number(a) - Number(b));
+        if (sortedKeys.length === 0) return;
+
+        // ── Canvas layout constants ──
+        const CARD_W  = 280;
+        const CARD_H  = 392;
+        const COLS    = 3;
+        const GAP     = 16;
+        const PAD     = 24;
+        const HDR_H   = 44;  // height of the date label row above the cards
+        const DPR     = 2;   // render at 2× for sharpness
+
+        const cols    = Math.min(sortedKeys.length, COLS);
+        const rows    = Math.ceil(sortedKeys.length / COLS);
+        const cssW    = cols * CARD_W + (cols - 1) * GAP + PAD * 2;
+        const cssH    = rows * CARD_H + (rows - 1) * GAP + PAD * 2 + HDR_H;
+
+        const canvas  = document.createElement("canvas");
+        canvas.width  = cssW * DPR;
+        canvas.height = cssH * DPR;
+        const ctx     = canvas.getContext("2d");
+        ctx.scale(DPR, DPR);
+
+        // Background
+        ctx.fillStyle = "#111";
+        ctx.fillRect(0, 0, cssW, cssH);
+
+        // Date header
+        ctx.fillStyle  = "#c5c5c5";
+        ctx.font       = `bold 20px 'Cinzel', Georgia, serif`;
+        ctx.textAlign  = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(`MTG Daily Games \u2014 ${getGameDayLabel()}`, cssW / 2, PAD + HDR_H / 2);
+
+        // Load card frame once (local file — no CORS issue)
+        const frameImg = await loadImage("cardframe.jpg");
+        await document.fonts.ready;
+
+        // ── Card-frame layout fractions (must match the CSS) ──
+        const iL   = CARD_W * 0.055;   // inner left offset
+        const iT   = CARD_H * 0.025;   // inner top offset
+        const iW   = CARD_W * (1 - 0.055 * 2);
+        const iH   = CARD_H * (1 - 0.025 - 0.08);
+        const hdrH = iH * 0.085;       // .card-header  height
+        const typH = iH * 0.075;       // .card-type-line height
+        const txtH = iH * 0.33;        // .card-text-box flex-basis
+        const artH = iH - hdrH - typH - txtH; // .card-art flex: 1
+
+        const typeRelY = iT + hdrH + artH;
+        const textRelY = typeRelY + typH;
+
+        for (let i = 0; i < sortedKeys.length; i++) {
+          const key  = sortedKeys[i];
+          const { score } = scores[key];
+          const game = dailyGames[Number(key)];
+
+          const col  = i % COLS;
+          const row  = Math.floor(i / COLS);
+          const cx   = PAD + col * (CARD_W + GAP);
+          const cy   = PAD + HDR_H + row * (CARD_H + GAP);
+
+          // Draw card frame
+          if (frameImg.naturalWidth > 0) {
+            ctx.drawImage(frameImg, cx, cy, CARD_W, CARD_H);
+          } else {
+            ctx.fillStyle = "#2f4778";
+            ctx.fillRect(cx, cy, CARD_W, CARD_H);
+          }
+
+          // Card name
+          ctx.fillStyle    = "#111";
+          ctx.font         = `bold 13px 'Cinzel', Georgia, serif`;
+          ctx.textAlign    = "left";
+          ctx.textBaseline = "middle";
+          ctx.fillText(game.title, cx + iL + 5, cy + iT + hdrH / 2, iW - 10);
+
+          // Type line
+          ctx.font      = `bold 9px 'Cinzel', Georgia, serif`;
+          ctx.fillStyle = "#222";
+          ctx.fillText("Daily Game \u2014 MTG", cx + iL + 8, cy + typeRelY + typH / 2, iW - 16);
+
+          // Score
+          if (score) {
+            const lines   = score.split("\n");
+            const availH  = txtH - 16;  // 8 px padding top + bottom
+            const lineH   = lines.length > 0 ? Math.min(availH / lines.length, 26) : 20;
+            const fontSize = Math.max(Math.floor(lineH * 0.82), 10);
+            ctx.font         = `${fontSize}px 'Crimson Text', Georgia, serif`;
+            ctx.fillStyle    = "#111";
+            ctx.textAlign    = "left";
+            ctx.textBaseline = "top";
+            lines.forEach((line, li) => {
+              ctx.fillText(line, cx + iL + 10, cy + textRelY + 8 + li * lineH, iW - 20);
+            });
+          }
+        }
+
+        // Copy PNG to clipboard
+        return new Promise((resolve, reject) => {
+          canvas.toBlob(async (blob) => {
+            try {
+              await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
+          }, "image/png");
+        });
+      }
+
       document.getElementById("btn-copy-text").addEventListener("click", copyScoresText);
-      document.getElementById("btn-copy-image").addEventListener("click", () => {
-        // Image copy will be implemented later
+      document.getElementById("btn-copy-image").addEventListener("click", async function () {
+        const btn = this;
+        btn.disabled = true;
+        btn.textContent = "Copying\u2026";
+        try {
+          await copyScoresImage();
+          btn.textContent = "Copied!";
+          setTimeout(() => {
+            btn.textContent = "Copy Image";
+            btn.disabled = false;
+          }, 2000);
+        } catch {
+          btn.textContent = "Copy Image";
+          btn.disabled = false;
+        }
       });
     </script>
   </body>
