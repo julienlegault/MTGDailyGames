@@ -520,7 +520,7 @@
         const tapInput = document.createElement("input");
         tapInput.type = "text";
         tapInput.className = "tap-input";
-        tapInput.placeholder = "paste result here";
+        tapInput.placeholder = "Paste results here";
         tapInput.setAttribute("aria-label", `Result for ${game.title}`);
         const tapSubmit = document.createElement("button");
         tapSubmit.type = "button";
@@ -537,13 +537,6 @@
 
         card.addEventListener("click", () => {
           item.classList.add("tapped");
-        });
-
-        item.addEventListener("keydown", (e) => {
-          if (e.key === "Escape" && item.classList.contains("tapped")) {
-            item.classList.remove("tapped");
-            card.focus();
-          }
         });
 
         // ── Inner bordered area ──
