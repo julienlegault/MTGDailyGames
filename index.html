@@ -683,6 +683,7 @@
             tapSubmit.className = "tap-submit";
             tapSubmit.textContent = "Submit";
             tapSubmit.addEventListener("click", (e) => {
+              e.stopPropagation();
               const raw = tapInput.value.trim();
               if (!raw) return;
               const score = parseScore(raw, game.scoreType);
