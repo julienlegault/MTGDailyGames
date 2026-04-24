@@ -132,26 +132,15 @@
         }
       }
 
-      /* ══ Outer card frame — dark like a physical MTG card ══ */
+      /* ══ Outer card frame — uses cardframe.jpg as the actual MTG card frame ══ */
       .game-card {
         position: relative;
-        display: flex;
-        flex-direction: column;
         aspect-ratio: 5 / 7;
         width: 100%;
-        /* Dark card frame — padding creates the border effect */
-        background:
-          repeating-linear-gradient(
-            135deg,
-            rgba(255, 255, 255, 0.014) 0px,
-            rgba(255, 255, 255, 0.014) 1px,
-            transparent 1px,
-            transparent 6px
-          ),
-          linear-gradient(160deg, #1c1c1a 0%, var(--frame-dark) 100%);
+        background-image: url('cardframe.jpg');
+        background-size: 100% 100%;
+        background-repeat: no-repeat;
         border-radius: 18px;
-        /* 8px frame on sides/top, 28px at bottom for the footer strip */
-        padding: 8px 8px 28px;
         box-shadow:
           0 0 0 1px rgba(255, 255, 255, 0.06),
           0 10px 48px rgba(0, 0, 0, 0.8);
@@ -171,43 +160,28 @@
         outline: none;
       }
 
-      /* ── Inner bordered area (clips art to edges) ── */
+      /* ── Inner content area absolutely positioned over the frame's content zones ── */
       .card-inner {
+        position: absolute;
+        top: 2.5%;
+        left: 5.5%;
+        right: 5.5%;
+        bottom: 8%;
         display: flex;
         flex-direction: column;
-        flex: 1;
-        min-height: 0;
-        border-radius: 8px;
         overflow: hidden;
-        border: 1.5px solid var(--frame-silver-border);
       }
 
-      /* ── Name bar: silver/chrome (artifact card colour) ── */
+      /* ── Name bar: sits on the frame's silver pill at the top ── */
       .card-header {
         flex-shrink: 0;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 6px;
-        padding: 4px 6px 4px 9px;
-        background:
-          repeating-linear-gradient(
-            90deg,
-            rgba(255, 255, 255, 0.11) 0px,
-            rgba(255, 255, 255, 0.11) 1px,
-            transparent 1px,
-            transparent 4px
-          ),
-          repeating-linear-gradient(
-            0deg,
-            rgba(0, 0, 0, 0.055) 0px,
-            rgba(0, 0, 0, 0.055) 1px,
-            transparent 1px,
-            transparent 4px
-          ),
-          linear-gradient(180deg, #dcdcd4 0%, #c8c8c0 45%, #b8b8b0 100%);
-        border-bottom: 1px solid #888;
-        min-height: 26px;
+        padding: 0 6px 0 9px;
+        background: transparent;
+        height: 8.5%;
       }
 
       .card-name {
@@ -223,7 +197,7 @@
         line-height: 1;
       }
 
-      /* ── Art area: full-bleed, no blur (extended-art) ── */
+      /* ── Art area: fills the frame's black art window ── */
       .card-art {
         flex: 1;
         min-height: 0;
@@ -232,31 +206,12 @@
         background-position: top center;
       }
 
-      /* ── Grey textured middle border between art and type line ── */
+      /* ── Art border: hidden — the frame image handles this ── */
       .card-art-border {
-        flex-shrink: 0;
-        height: 7px;
-        background:
-          repeating-linear-gradient(
-            90deg,
-            rgba(255, 255, 255, 0.13) 0px,
-            rgba(255, 255, 255, 0.13) 1px,
-            transparent 1px,
-            transparent 4px
-          ),
-          repeating-linear-gradient(
-            0deg,
-            rgba(0, 0, 0, 0.07) 0px,
-            rgba(0, 0, 0, 0.07) 1px,
-            transparent 1px,
-            transparent 4px
-          ),
-          linear-gradient(180deg, #d6d6ce 0%, #bcbcb4 50%, #b0b0a8 100%);
-        border-top: 1px solid #aaa;
-        border-bottom: 1px solid #555;
+        display: none;
       }
 
-      /* ── Type line: dark gunmetal with silver borders ── */
+      /* ── Type line: sits on the frame's silver pill in the middle ── */
       .card-type-line {
         flex-shrink: 0;
         display: flex;
@@ -264,46 +219,28 @@
         justify-content: space-between;
         gap: 4px;
         padding: 0 8px;
-        min-height: 22px;
-        background: var(--frame-typeline);
-        border-bottom: 1.5px solid var(--frame-silver-border);
+        height: 7.5%;
+        background: transparent;
       }
 
       .card-type-text {
         font-family: "Cinzel", Georgia, serif;
         font-size: 0.63rem;
         font-weight: 700;
-        color: #ccc;
+        color: #222;
         letter-spacing: 0.04em;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
 
-      /* ── Text box: light grey with diagonal crosshatch texture ── */
+      /* ── Text box: sits in the frame's white textured area ── */
       .card-text-box {
         flex-shrink: 0;
-        position: relative;
-        /* ~25% of the inner content height */
-        flex-basis: 25%;
+        flex-basis: 28%;
         overflow: hidden;
         padding: 8px 10px 9px;
-        background:
-          repeating-linear-gradient(
-            -45deg,
-            rgba(0, 0, 0, 0.038) 0px,
-            rgba(0, 0, 0, 0.038) 1px,
-            transparent 1px,
-            transparent 5px
-          ),
-          repeating-linear-gradient(
-            45deg,
-            rgba(0, 0, 0, 0.022) 0px,
-            rgba(0, 0, 0, 0.022) 1px,
-            transparent 1px,
-            transparent 8px
-          ),
-          var(--frame-textbox);
+        background: transparent;
       }
 
       .card-description {
@@ -315,17 +252,17 @@
         text-align: left;
       }
 
-      /* ── Footer strip inside the dark outer frame ── */
+      /* ── Footer strip inside the frame's bottom border area ── */
       .card-footer-strip {
         position: absolute;
-        bottom: 5px;
-        left: 9px;
-        right: 9px;
+        bottom: 2%;
+        left: 5.5%;
+        right: 5.5%;
         display: flex;
         align-items: center;
         justify-content: space-between;
         font-size: 0.42rem;
-        color: #777;
+        color: #444;
         font-family: "Crimson Text", Georgia, serif;
         letter-spacing: 0.01em;
       }
@@ -345,7 +282,7 @@
         }
 
         .card-text-box {
-          padding: 5px 7px 6px;
+          padding: 5px 7px;
         }
       }
 
