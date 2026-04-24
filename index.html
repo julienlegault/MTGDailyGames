@@ -150,8 +150,6 @@
         box-shadow:
           0 0 0 1px rgba(255, 255, 255, 0.06),
           0 10px 48px rgba(0, 0, 0, 0.8);
-        text-decoration: none;
-        color: inherit;
         overflow: hidden;
         transition: transform 0.4s ease, box-shadow 0.18s ease;
         transform: translateZ(0);
@@ -159,7 +157,7 @@
       }
 
       .game-card:hover,
-      .game-card:focus-visible {
+      .game-card:has(.card-name:focus-visible) {
         transform: translateY(-5px) scale(1.02);
         box-shadow:
           0 0 0 1px rgba(255, 255, 255, 0.13),
@@ -254,6 +252,7 @@
         text-overflow: ellipsis;
         line-height: 1;
         text-align: left;
+        text-decoration: none;
       }
 
       /* ── Art area: fills the frame's black art window ── */
@@ -300,6 +299,11 @@
         overflow: hidden;
         padding: 8px 5px 9px;
         background: transparent;
+        cursor: pointer;
+      }
+
+      .card-text-box.has-form {
+        cursor: default;
       }
 
       .card-description {
@@ -655,47 +659,17 @@
         const slot = document.createElement("div");
         slot.className = "card-slot";
 
-        const card = document.createElement("a");
+        const card = document.createElement("div");
         card.className = "game-card";
-        card.href = game.url;
-        card.target = "_blank";
-        card.rel = "noopener noreferrer";
         card.style.setProperty("--card-image", fallbackGradient);
 
-        if (game.scoreType !== "none") {
-          card.addEventListener("click", (e) => {
-            if (textBox.classList.contains("has-form")) return;
-            // If a score is already stored for today, don't show the form
-            const currentScores = loadScores();
-            if (currentScores[index]) return;
-            description.remove();
-            textBox.classList.add("has-form");
-            const tapInput = document.createElement("textarea");
-            tapInput.className = "tap-input";
-            tapInput.placeholder = "Paste results here";
-            tapInput.setAttribute("aria-label", `Result for ${game.title}`);
-            tapInput.addEventListener("click", (e) => e.stopPropagation());
-            const tapSubmit = document.createElement("button");
-            tapSubmit.type = "button";
-            tapSubmit.className = "tap-submit";
-            tapSubmit.textContent = "Submit";
-            tapSubmit.addEventListener("click", (e) => {
-              e.stopPropagation();
-              const raw = tapInput.value.trim();
-              if (!raw) return;
-              const score = parseScore(raw, game.scoreType);
-              textBox.classList.remove("has-form");
-              while (textBox.firstChild) textBox.removeChild(textBox.firstChild);
-              const scoreEl = document.createElement("p");
-              scoreEl.className = "card-description card-score";
-              scoreEl.textContent = score !== null ? score : "Could not read score — please paste the complete result text from the game.";
-              textBox.append(scoreEl);
-              requestAnimationFrame(() => fitScoreText(scoreEl, textBox));
-              if (score !== null) saveScore(index, score);
-            });
-            textBox.append(tapInput, tapSubmit);
-          });
-        }
+        // Top-zone click: navigate to the game URL for any click outside the text box
+        card.addEventListener("click", (e) => {
+          if (e.target.closest(".card-text-box")) return; // text box handles its own clicks
+          if (e.target.closest("a")) return;              // card-name <a> handles its own navigation — avoid double window.open
+          window.open(game.url, "_blank", "noopener,noreferrer");
+        });
+
         // ── Inner bordered area ──
         const inner = document.createElement("div");
         inner.className = "card-inner";
@@ -703,8 +677,11 @@
         // Name bar: silver gradient, game title + mana-cost circle
         const header = document.createElement("div");
         header.className = "card-header";
-        const cardName = document.createElement("h2");
+        const cardName = document.createElement("a");
         cardName.className = "card-name";
+        cardName.href = game.url;
+        cardName.target = "_blank";
+        cardName.rel = "noopener noreferrer";
         cardName.textContent = game.title;
         header.append(cardName);
 
@@ -733,6 +710,48 @@
         description.className = "card-description";
         description.textContent = game.description;
         textBox.append(description);
+
+        // Text-box zone click: show score-entry form when available, otherwise navigate
+        textBox.addEventListener("click", (e) => {
+          if (textBox.classList.contains("has-form")) {
+            e.stopPropagation(); // form is active — don't bubble to card handler
+            return;
+          }
+          if (game.scoreType !== "none") {
+            const currentScores = loadScores();
+            if (!currentScores[index]) {
+              // No score yet — show the paste form
+              description.remove();
+              textBox.classList.add("has-form");
+              const tapInput = document.createElement("textarea");
+              tapInput.className = "tap-input";
+              tapInput.placeholder = "Paste results here";
+              tapInput.setAttribute("aria-label", `Result for ${game.title}`);
+              const tapSubmit = document.createElement("button");
+              tapSubmit.type = "button";
+              tapSubmit.className = "tap-submit";
+              tapSubmit.textContent = "Submit";
+              tapSubmit.addEventListener("click", (e) => {
+                e.stopPropagation(); // prevent textBox navigate-handler from re-running
+                const raw = tapInput.value.trim();
+                if (!raw) return;
+                const score = parseScore(raw, game.scoreType);
+                textBox.classList.remove("has-form");
+                while (textBox.firstChild) textBox.removeChild(textBox.firstChild);
+                const scoreEl = document.createElement("p");
+                scoreEl.className = "card-description card-score";
+                scoreEl.textContent = score !== null ? score : "Could not read score — please paste the complete result text from the game.";
+                textBox.append(scoreEl);
+                requestAnimationFrame(() => fitScoreText(scoreEl, textBox));
+                if (score !== null) saveScore(index, score);
+              });
+              textBox.append(tapInput, tapSubmit);
+              return;
+            }
+          }
+          // Description or stored-score is showing — navigate to the game
+          window.open(game.url, "_blank", "noopener,noreferrer");
+        });
 
         // If a score was stored for today, display it immediately
         if (storedScore) {
