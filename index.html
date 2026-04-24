@@ -172,15 +172,21 @@
         cursor: default;
       }
 
-      /* ══ Tap input row — appears below card when tapped ══ */
+      /* ══ Tap input row — overlaid on top of the card when tapped ══ */
       .tap-input-area {
         display: none;
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2;
         flex-direction: row;
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
-        padding: 0.5rem 0.25rem 0;
-        background: transparent;
+        padding: 0.75rem 0.5rem;
+        background: rgba(0, 0, 0, 0.72);
+        border-radius: 0 0 18px 18px;
       }
 
       .game-item.tapped .tap-input-area {
@@ -597,8 +603,8 @@
         previewStatus.textContent = "Loading live preview.";
         card.appendChild(previewStatus);
 
-        slot.append(card);
-        item.append(slot, tapArea);
+        slot.append(card, tapArea);
+        item.append(slot);
         gamesContainer.appendChild(item);
         loadPreviewWithFallback(card, previewStatus, game.url);
       }
