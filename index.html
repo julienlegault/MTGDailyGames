@@ -132,11 +132,17 @@
         }
       }
 
-      /* ══ Outer card frame — uses cardframe.jpg as the actual MTG card frame ══ */
-      .game-card {
+      /* ══ Slot: holds grid position while card rotates inside ══ */
+      .card-slot {
         position: relative;
         aspect-ratio: 5 / 7;
         width: 100%;
+      }
+
+      /* ══ Outer card frame — uses cardframe.jpg as the actual MTG card frame ══ */
+      .game-card {
+        position: absolute;
+        inset: 0;
         background-image: url('cardframe.jpg');
         background-size: 100% 100%;
         background-repeat: no-repeat;
@@ -147,17 +153,84 @@
         text-decoration: none;
         color: inherit;
         overflow: hidden;
-        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        transition: transform 0.4s ease, box-shadow 0.18s ease;
         transform: translateZ(0);
+        cursor: pointer;
       }
 
-      .game-card:hover,
-      .game-card:focus-visible {
+      .card-slot:not(.tapped) .game-card:hover,
+      .card-slot:not(.tapped) .game-card:focus-visible {
         transform: translateY(-5px) scale(1.02);
         box-shadow:
           0 0 0 1px rgba(255, 255, 255, 0.13),
           0 20px 64px rgba(0, 0, 0, 0.9);
         outline: none;
+      }
+
+      .card-slot.tapped .game-card {
+        transform: rotate(90deg);
+        cursor: default;
+      }
+
+      /* ══ Tap input overlay — appears above card when tapped ══ */
+      .tap-input-area {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50%;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem 0.5rem;
+        background: rgba(10, 10, 10, 0.88);
+        border-radius: 10px 10px 0 0;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease 0.4s;
+      }
+
+      .card-slot.tapped .tap-input-area {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .tap-input {
+        width: 85%;
+        padding: 0.4rem 0.6rem;
+        font-family: "Crimson Text", Georgia, serif;
+        font-size: 0.9rem;
+        background: #1e1e1e;
+        color: #e8e8e8;
+        border: 1px solid #555;
+        border-radius: 6px;
+        outline: none;
+      }
+
+      .tap-input:focus {
+        border-color: #aaa;
+      }
+
+      .tap-submit {
+        padding: 0.35rem 1.1rem;
+        font-family: "Cinzel", Georgia, serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        background: #2a2a2a;
+        color: #ccc;
+        border: 1px solid #666;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+      }
+
+      .tap-submit:hover {
+        background: #3a3a3a;
+        color: #fff;
       }
 
       /* ── Inner content area absolutely positioned over the frame's content zones ── */
@@ -442,12 +515,43 @@
       }
 
       function createGameCard(game, index) {
+        // ── Slot: maintains grid position while card rotates inside ──
+        const slot = document.createElement("div");
+        slot.className = "card-slot";
+
+        // ── Tap input area (shown above card when tapped) ──
+        const tapArea = document.createElement("div");
+        tapArea.className = "tap-input-area";
+        const tapInput = document.createElement("input");
+        tapInput.type = "text";
+        tapInput.className = "tap-input";
+        tapInput.placeholder = "Your guess…";
+        tapInput.setAttribute("aria-label", `Guess for ${game.title}`);
+        const tapSubmit = document.createElement("button");
+        tapSubmit.type = "button";
+        tapSubmit.className = "tap-submit";
+        tapSubmit.textContent = "Submit";
+        tapArea.append(tapInput, tapSubmit);
+
         const card = document.createElement("a");
         card.className = "game-card";
         card.href = game.url;
         card.target = "_blank";
         card.rel = "noopener noreferrer";
         card.style.setProperty("--card-image", fallbackGradient);
+
+        card.addEventListener("click", (e) => {
+          e.preventDefault();
+          slot.classList.add("tapped");
+          setTimeout(() => tapInput.focus(), 650);
+        });
+
+        slot.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && slot.classList.contains("tapped")) {
+            slot.classList.remove("tapped");
+            card.focus();
+          }
+        });
 
         // ── Inner bordered area ──
         const inner = document.createElement("div");
@@ -507,7 +611,8 @@
         previewStatus.textContent = "Loading live preview.";
         card.appendChild(previewStatus);
 
-        gamesContainer.appendChild(card);
+        slot.append(tapArea, card);
+        gamesContainer.appendChild(slot);
         loadPreviewWithFallback(card, previewStatus, game.url);
       }
 
