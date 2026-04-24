@@ -191,6 +191,10 @@
         border-color: #333;
       }
 
+      input.tap-input {
+        flex: none;
+      }
+
       .card-score {
         white-space: pre-wrap;
         line-height: 1.3;
@@ -739,10 +743,22 @@
 
           description.remove();
           textBox.classList.add("has-form");
-          const tapInput = document.createElement("textarea");
+
+          let tapInput;
+          if (game.scoreType === "number") {
+            tapInput = document.createElement("input");
+            tapInput.type = "number";
+            tapInput.min = "0";
+            tapInput.max = "30";
+            tapInput.step = "1";
+            tapInput.placeholder = "0–30";
+          } else {
+            tapInput = document.createElement("textarea");
+            tapInput.placeholder = "Paste results here";
+          }
           tapInput.className = "tap-input";
-          tapInput.placeholder = "Paste results here";
           tapInput.setAttribute("aria-label", `Result for ${game.title}`);
+
           const tapSubmit = document.createElement("button");
           tapSubmit.type = "button";
           tapSubmit.className = "tap-submit";
@@ -751,7 +767,21 @@
             e.stopPropagation(); // prevent textBox navigate-handler from re-running
             const raw = tapInput.value.trim();
             if (!raw) return;
-            const score = parseScore(raw, game.scoreType);
+
+            let score;
+            if (game.scoreType === "number") {
+              const num = Number(raw);
+              if (!Number.isInteger(num) || num < 0 || num > 30) {
+                tapInput.setCustomValidity("Input the number of guesses");
+                tapInput.reportValidity();
+                return;
+              }
+              tapInput.setCustomValidity("");
+              score = `${num} guesses`;
+            } else {
+              score = parseScore(raw, game.scoreType);
+            }
+
             textBox.classList.remove("has-form");
             while (textBox.firstChild) textBox.removeChild(textBox.firstChild);
             const scoreEl = document.createElement("p");
