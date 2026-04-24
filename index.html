@@ -609,7 +609,7 @@
       const PREVIEW_WIDTH = 1200;
       const PREVIEW_SOURCE_TIMEOUT = 6000;
       const PREVIEW_TOTAL_TIMEOUT = 10000;
-      const TRUSTED_PREVIEW_HOSTS = new Set(["image.thum.io", "s.wordpress.com"]);
+      const PREVIEW_MIN_WIDTH = 400;
       const gamesContainer = document.getElementById("games");
 
       // Match emoji sequences: base Extended_Pictographic + optional variation selector
@@ -657,60 +657,86 @@
 
       function loadPreviewWithFallback(card, warningOverlay, status, websiteUrl) {
         const sources = getLivePreviewUrls(websiteUrl);
-        let currentImg = null;
-        let sourceTimeout = null;
         let settled = false;
+        let currentAbortCtrl = null;
 
         const overallTimer = setTimeout(() => {
           if (settled) return;
           settled = true;
-          if (currentImg) currentImg.src = "";
-          if (sourceTimeout) clearTimeout(sourceTimeout);
+          if (currentAbortCtrl) currentAbortCtrl.abort();
           warningOverlay.style.display = "flex";
           status.textContent = "Live preview timed out.";
         }, PREVIEW_TOTAL_TIMEOUT);
 
-        function trySource(index) {
+        async function trySource(index) {
           if (settled) return;
-          if (index >= sources.length) {
-            return;
-          }
+          if (index >= sources.length) return;
 
-          currentImg = new Image();
-          sourceTimeout = setTimeout(() => {
-            if (settled) return;
-            currentImg.src = "";
-            trySource(index + 1);
+          const url = sources[index];
+          const abortCtrl = new AbortController();
+          currentAbortCtrl = abortCtrl;
+          let timedOut = false;
+
+          const sourceTimeoutId = setTimeout(() => {
+            timedOut = true;
+            abortCtrl.abort();
+            if (!settled) trySource(index + 1);
           }, PREVIEW_SOURCE_TIMEOUT);
 
-          currentImg.onload = () => {
-            clearTimeout(sourceTimeout);
-            if (settled) return;
-            try {
-              const previewUrl = new URL(currentImg.src);
-              const isTrustedSource =
-                previewUrl.protocol === "https:" && TRUSTED_PREVIEW_HOSTS.has(previewUrl.hostname);
+          try {
+            const response = await fetch(url, { signal: abortCtrl.signal });
+            clearTimeout(sourceTimeoutId);
+            if (settled || timedOut) return;
 
-              if (isTrustedSource) {
-                clearTimeout(overallTimer);
-                settled = true;
-                card.style.setProperty("--card-image", `url("${previewUrl.href}")`);
-                status.textContent = "Live preview loaded.";
-                return;
-              }
-            } catch {
-              // Keep uploaded image when URL parsing fails.
+            if (!response.ok) {
+              trySource(index + 1);
+              return;
             }
 
-            trySource(index + 1);
-          };
+            // thum.io exposes the original page's HTTP status; skip previews where
+            // the underlying site returned an error (e.g. a Cloudflare block page).
+            const originStatus = response.headers.get("x-origin-status");
+            if (originStatus && parseInt(originStatus, 10) >= 400) {
+              trySource(index + 1);
+              return;
+            }
 
-          currentImg.onerror = () => {
-            clearTimeout(sourceTimeout);
-            trySource(index + 1);
-          };
+            const blob = await response.blob();
+            if (settled || timedOut) return;
+            if (!blob.type.startsWith("image/")) {
+              trySource(index + 1);
+              return;
+            }
 
-          currentImg.src = sources[index];
+            const objectUrl = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = () => {
+              if (settled || timedOut) {
+                URL.revokeObjectURL(objectUrl);
+                return;
+              }
+              // Reject loading placeholders that are too small (e.g. WordPress mshots spinner).
+              if (img.naturalWidth < PREVIEW_MIN_WIDTH) {
+                URL.revokeObjectURL(objectUrl);
+                trySource(index + 1);
+                return;
+              }
+              clearTimeout(overallTimer);
+              settled = true;
+              // The object URL is intentionally kept alive: the CSS background
+              // image requires it to remain valid for the lifetime of the page.
+              card.style.setProperty("--card-image", `url("${objectUrl}")`);
+              status.textContent = "Live preview loaded.";
+            };
+            img.onerror = () => {
+              URL.revokeObjectURL(objectUrl);
+              if (!settled && !timedOut) trySource(index + 1);
+            };
+            img.src = objectUrl;
+          } catch {
+            clearTimeout(sourceTimeoutId);
+            if (!settled && !timedOut) trySource(index + 1);
+          }
         }
 
         trySource(0);
