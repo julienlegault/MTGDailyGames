@@ -668,8 +668,6 @@
             // If a score is already stored for today, don't show the form
             const currentScores = loadScores();
             if (currentScores[index]) return;
-            // Stop navigation so the form can be interacted with
-            e.preventDefault();
             description.remove();
             textBox.classList.add("has-form");
             // Remove the href so the card is no longer a link while the form is open;
