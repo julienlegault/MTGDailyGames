@@ -618,6 +618,7 @@
           url: "https://www.mtgnexus.com/games/",
           scoreType: "none",
           image: "mtgnexus.png",
+          skipAvailabilityCheck: true,
         },
       ];
 
@@ -850,7 +851,9 @@
         slot.append(card);
         item.append(slot);
         gamesContainer.appendChild(item);
-        checkGameAvailability(artWarning, game.url);
+        if (!game.skipAvailabilityCheck) {
+          checkGameAvailability(artWarning, game.url);
+        }
       }
 
       const initialScores = loadScores();
