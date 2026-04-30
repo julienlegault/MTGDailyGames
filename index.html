@@ -531,7 +531,7 @@
         const scores = loadScores();
         const sortedKeys = Object.keys(scores).sort((a, b) => Number(a) - Number(b));
         const parts = sortedKeys.map((idx) => `${scores[idx].score}\n${scores[idx].url}`);
-        const text = `${getGameDayLabel()}\n\n${parts.join("\n\n")}`;
+        const text = `${getGameDayLabel()}\nhttps://mtgdailygames.com\n\n${parts.join("\n\n")}`;
         navigator.clipboard.writeText(text).catch(() => {
           const ta = document.createElement("textarea");
           ta.value = text;
