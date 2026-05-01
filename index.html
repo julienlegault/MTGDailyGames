@@ -1214,8 +1214,6 @@
           ctx.font         = `${Math.round(CARD_H * 0.018)}px 'Crimson Text', Georgia, serif`;
           ctx.fillStyle    = "#888";
           ctx.textBaseline = "bottom";
-          ctx.textAlign    = "left";
-          ctx.fillText(`${String(Number(key) + 1).padStart(3, "0")} \u2022 EN`, cx + iL, FOOTER_Y);
           ctx.textAlign    = "right";
           ctx.fillText(hostname, cx + CARD_W - iL, FOOTER_Y);
 
