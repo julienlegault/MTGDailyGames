@@ -1157,6 +1157,13 @@
           const cx   = PAD + col * (CARD_W + GAP);
           const cy   = PAD + HDR_H + row * (CARD_H + GAP);
 
+          // Clip card to rounded corners (matches CSS border-radius: 18px on .game-card)
+          ctx.save();
+          const cardRadius = Math.round(CARD_W * 0.065);
+          ctx.beginPath();
+          ctx.roundRect(cx, cy, CARD_W, CARD_H, cardRadius);
+          ctx.clip();
+
           // Draw card frame
           if (frameImg.naturalWidth > 0) {
             ctx.drawImage(frameImg, cx, cy, CARD_W, CARD_H);
@@ -1200,6 +1207,18 @@
               ctx.fillText(line, cx + iL + 10, cy + textRelY + 8 + li * lineH, iW - 20);
             });
           }
+
+          // Footer strip: card number (left) + game hostname (right), matching .card-footer-strip
+          const hostname = new URL(game.url).hostname;
+          ctx.font         = `7px 'Crimson Text', Georgia, serif`;
+          ctx.fillStyle    = "#888";
+          ctx.textBaseline = "bottom";
+          ctx.textAlign    = "left";
+          ctx.fillText(`${String(Number(key) + 1).padStart(3, "0")} \u2022 EN`, cx + iL, cy + CARD_H * 0.98);
+          ctx.textAlign    = "right";
+          ctx.fillText(hostname, cx + CARD_W - iL, cy + CARD_H * 0.98);
+
+          ctx.restore();
         }
 
         // Watermark
