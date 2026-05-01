@@ -519,6 +519,10 @@
         scores[index] = { score, url: dailyGames[index].url };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
         updateShareBar(scores);
+        // Invalidate stale cache and kick off background pre-render (non-blocking).
+        cachedImageBlob = null;
+        cachedImageBlobKey = null;
+        setTimeout(prewarmImageCache, 0);
       }
 
       function updateShareBar(scores) {
@@ -889,6 +893,37 @@
       let cachedFrameImg = null;
       const cachedGameImgs = {};
 
+      // Pre-rendered PNG blob cache.
+      // cachedImageBlobKey is the JSON-stringified scores snapshot the blob was built from.
+      // When it matches the current scores the blob can be used directly without re-rendering.
+      let cachedImageBlob = null;
+      let cachedImageBlobKey = null;
+      let imageCacheInFlight = false;
+
+      function getScoresCacheKey(scores) {
+        return JSON.stringify(scores);
+      }
+
+      async function prewarmImageCache() {
+        const scores = loadScores();
+        const key = getScoresCacheKey(scores);
+        // Nothing to do if cache is already fresh or a generation is already running.
+        if (cachedImageBlobKey === key || imageCacheInFlight) return;
+        imageCacheInFlight = true;
+        try {
+          const blob = await generateScoresImageBlob();
+          // Only store the result if the scores haven't changed while we were rendering.
+          if (blob && getScoresCacheKey(loadScores()) === key) {
+            cachedImageBlob = blob;
+            cachedImageBlobKey = key;
+          }
+        } catch {
+          // Silently ignore background errors; the on-demand path will handle them.
+        } finally {
+          imageCacheInFlight = false;
+        }
+      }
+
       // Draw an image into a canvas rect with cover behaviour (top-aligned).
       // Scales the image so it completely fills the rect while preserving its aspect
       // ratio: the wider dimension is cropped equally on both sides; the taller
@@ -917,10 +952,11 @@
         ctx.restore();
       }
 
-      async function copyScoresImage() {
+      // Renders the scores card grid onto a canvas and resolves with the PNG Blob.
+      async function generateScoresImageBlob() {
         const scores = loadScores();
         const sortedKeys = Object.keys(scores).sort((a, b) => Number(a) - Number(b));
-        if (sortedKeys.length === 0) return;
+        if (sortedKeys.length === 0) return null;
 
         // ── Canvas layout constants ──
         const CARD_W  = 280;
@@ -1046,17 +1082,32 @@
         ctx.fillText("mtgdailygames.com", cssW - PAD, cssH - 8);
         ctx.restore();
 
-        // Copy PNG to clipboard
+        // Return the PNG blob
         return new Promise((resolve, reject) => {
-          canvas.toBlob(async (blob) => {
-            try {
-              await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-              resolve();
-            } catch (err) {
-              reject(err);
-            }
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error("canvas.toBlob returned null"));
           }, "image/png");
         });
+      }
+
+      // Writes the scores image to the clipboard, using the pre-warmed blob when available.
+      async function copyScoresImage() {
+        const scores = loadScores();
+        const key = getScoresCacheKey(scores);
+        let blob;
+        if (cachedImageBlob && cachedImageBlobKey === key) {
+          blob = cachedImageBlob;
+        } else {
+          blob = await generateScoresImageBlob();
+          // Update cache so subsequent clicks are instant.
+          if (blob && getScoresCacheKey(loadScores()) === key) {
+            cachedImageBlob = blob;
+            cachedImageBlobKey = key;
+          }
+        }
+        if (!blob) return;
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       }
 
       document.getElementById("btn-copy-text").addEventListener("click", copyScoresText);
