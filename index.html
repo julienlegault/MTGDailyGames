@@ -582,6 +582,14 @@
         function countEmojiRows(text) {
           return text.split("\n").filter(line => /\p{Extended_Pictographic}/u.test(line)).length;
         }
+        // Counts lines containing only colored large-square emojis:
+        // 🟥–🟫 (U+1F7E5–U+1F7EB) and ⬛⬜ (U+2B1B–U+2B1C).
+        function countColoredBoxRows(text) {
+          return text.split("\n").filter(line => {
+            const trimmed = line.trim();
+            return trimmed.length > 0 && /^[\u{1F7E5}-\u{1F7EB}\u{2B1B}\u{2B1C}]+$/u.test(trimmed);
+          }).length;
+        }
         switch (gameTitle) {
           case "Spellify": {
             const lines = raw.split("\n");
@@ -614,11 +622,11 @@
             return match ? parseFloat(match[1]) : null;
           }
           case "Card Clash Synergy":
-            return countEmojiRows(raw) || null;
+            return countColoredBoxRows(raw) || null;
           case "Moxle":
             return countEmojiRows(raw) || null;
           case "Card Gourmet":
-            return countEmojiRows(raw) || null;
+            return countColoredBoxRows(raw) || null;
           default:
             return null;
         }
@@ -650,7 +658,10 @@
         const avg = values.reduce((a, b) => a + b, 0) / values.length;
         const avgDisplay = Number.isInteger(avg) ? String(avg) : avg.toFixed(1);
 
-        return `My ${span} Day Average: ${avgDisplay}`;
+        const unitMap = { "Magicdoku": "%", "Asmrandle": " correct" };
+        const unit = unitMap[game.title] ?? " guesses";
+
+        return `My ${span} Day Average: ${avgDisplay}${unit}`;
       }
 
       function copyScoresText() {
