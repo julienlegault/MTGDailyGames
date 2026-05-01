@@ -505,19 +505,26 @@
       }
 
       const STORAGE_KEY = "mtgdg_" + getGameDay();
+      const HISTORY_KEY = "mtgdg_history";
+      const MAX_HISTORY_DAYS = 30;
 
-      function loadScores() {
+      function loadDayScores(dateStr) {
         try {
-          return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+          return JSON.parse(localStorage.getItem("mtgdg_" + dateStr)) || {};
         } catch {
           return {};
         }
       }
 
-      function saveScore(index, score) {
+      function loadScores() {
+        return loadDayScores(getGameDay());
+      }
+
+      function saveScore(index, score, averageValue) {
         const scores = loadScores();
-        scores[index] = { score, url: dailyGames[index].url };
+        scores[index] = { score, url: dailyGames[index].url, averageValue: averageValue ?? null };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
+        updateHistory(getGameDay());
         updateShareBar(scores);
         // Invalidate stale cache and kick off background pre-render (non-blocking).
         cachedImageBlob = null;
@@ -529,6 +536,121 @@
         const shareBar = document.getElementById("share-bar");
         const hasScores = Object.keys(scores).length > 0;
         shareBar.style.display = hasScores ? "flex" : "none";
+      }
+
+      function loadHistory() {
+        try {
+          const raw = localStorage.getItem(HISTORY_KEY);
+          if (!raw) return [];
+          const today = getGameDay();
+          const todayMs = new Date(today + "T12:00:00Z").getTime();
+          const cutoffMs = todayMs - MAX_HISTORY_DAYS * 24 * 60 * 60 * 1000;
+          const dates = JSON.parse(raw);
+          return dates.filter(d => new Date(d + "T12:00:00Z").getTime() >= cutoffMs).sort();
+        } catch {
+          return [];
+        }
+      }
+
+      function updateHistory(dateStr) {
+        try {
+          let dates = [];
+          try { dates = JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch {}
+          if (!dates.includes(dateStr)) {
+            dates.push(dateStr);
+            dates.sort();
+          }
+          const today = getGameDay();
+          const todayMs = new Date(today + "T12:00:00Z").getTime();
+          const cutoffMs = todayMs - MAX_HISTORY_DAYS * 24 * 60 * 60 * 1000;
+          dates = dates.filter(d => new Date(d + "T12:00:00Z").getTime() >= cutoffMs);
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(dates));
+          // Clean up stale per-day localStorage entries
+          const validDayKeys = new Set(dates.map(d => "mtgdg_" + d));
+          const keysToRemove = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith("mtgdg_") && k !== HISTORY_KEY && !validDayKeys.has(k)) {
+              keysToRemove.push(k);
+            }
+          }
+          keysToRemove.forEach(k => localStorage.removeItem(k));
+        } catch {}
+      }
+
+      function extractAverageValueFromRaw(raw, gameTitle) {
+        function countEmojiRows(text) {
+          return text.split("\n").filter(line => /\p{Extended_Pictographic}/u.test(line)).length;
+        }
+        switch (gameTitle) {
+          case "Spellify": {
+            const lines = raw.split("\n");
+            for (const line of lines) {
+              if (line.includes("\u2705")) {
+                const before = line.substring(0, line.indexOf("\u2705"));
+                const matches = before.match(EMOJI_RE) || [];
+                return matches.length + 1;
+              }
+            }
+            return null;
+          }
+          case "Enchant Worldle":
+            return countEmojiRows(raw) || null;
+          case "Asmrandle": {
+            const sparkles = (raw.match(/\u2728/gu) || []).length;
+            if (sparkles > 0) return sparkles;
+            const greens = (raw.match(/\uD83D\uDFE9/gu) || []).length;
+            return greens || null;
+          }
+          case "Commander Codex":
+            return countEmojiRows(raw) || null;
+          case "Guess the Magic Card": {
+            const allEmojis = raw.match(EMOJI_RE) || [];
+            const nonGrey = allEmojis.filter(e => e !== "\u2B1B" && e !== "\u2B1C");
+            return nonGrey.length || null;
+          }
+          case "Magicdoku": {
+            const match = raw.match(/(\d+(?:\.\d+)?)\s*%/);
+            return match ? parseFloat(match[1]) : null;
+          }
+          case "Card Clash Synergy":
+            return countEmojiRows(raw) || null;
+          case "Moxle":
+            return countEmojiRows(raw) || null;
+          case "Card Gourmet":
+            return countEmojiRows(raw) || null;
+          default:
+            return null;
+        }
+      }
+
+      function getGameAverageText(gameIndex) {
+        const game = dailyGames[gameIndex];
+        if (!game || game.scoreType === "none") return "Daily Game \u2014 MTG";
+
+        const history = loadHistory();
+        if (history.length < 2) return "Daily Game \u2014 MTG";
+
+        const values = [];
+        const scoredDates = [];
+        for (const dateStr of history) {
+          const dayScores = loadDayScores(dateStr);
+          const entry = dayScores[gameIndex];
+          if (entry && entry.averageValue != null) {
+            values.push(entry.averageValue);
+            scoredDates.push(dateStr);
+          }
+        }
+
+        if (values.length < 2) return "Daily Game \u2014 MTG";
+
+        const dateMs = scoredDates.map(d => new Date(d + "T12:00:00Z").getTime());
+        const span = Math.round((Math.max(...dateMs) - Math.min(...dateMs)) / (1000 * 60 * 60 * 24));
+
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        const avgDisplay = Number.isInteger(avg) ? String(avg) : avg.toFixed(1);
+
+        return `My ${span} Day${span === 1 ? "" : "s"} Average: ${avgDisplay}`;
       }
 
       function copyScoresText() {
@@ -745,6 +867,7 @@
             if (!raw) return;
 
             let score;
+            let averageValue = null;
             if (game.scoreType === "number") {
               const num = Number(raw);
               if (!Number.isInteger(num) || num < 0 || num > 30) {
@@ -754,8 +877,10 @@
               }
               tapInput.setCustomValidity("");
               score = `${num} ${num === 1 ? "guess" : "guesses"}`;
+              averageValue = num;
             } else {
               score = parseScore(raw, game.scoreType);
+              averageValue = extractAverageValueFromRaw(raw, game.title);
             }
 
             textBox.classList.remove("has-form");
@@ -765,7 +890,7 @@
             scoreEl.textContent = score !== null ? score : "Could not read score — please paste the complete result text from the game.";
             textBox.append(scoreEl);
             requestAnimationFrame(() => fitScoreText(scoreEl, textBox));
-            if (score !== null) saveScore(index, score);
+            if (score !== null) saveScore(index, score, averageValue);
           });
           textBox.append(tapInput, tapSubmit);
           return true;
@@ -822,7 +947,7 @@
         typeLine.className = "card-type-line";
         const typeText = document.createElement("span");
         typeText.className = "card-type-text";
-        typeText.textContent = "Daily Game — MTG";
+        typeText.textContent = getGameAverageText(index);
         typeLine.append(typeText);
 
         // Text box — grey textured, description
@@ -877,6 +1002,10 @@
       }
 
       const initialScores = loadScores();
+      // Ensure today appears in history if scores were already saved (e.g. after a page refresh)
+      if (Object.keys(initialScores).length > 0) {
+        updateHistory(getGameDay());
+      }
       dailyGames.forEach((game, index) => createGameCard(game, index, initialScores[index]?.score ?? null));
       updateShareBar(initialScores);
 
@@ -1055,7 +1184,7 @@
           // Type line
           ctx.font      = `bold 9px 'Cinzel', Georgia, serif`;
           ctx.fillStyle = "#222";
-          ctx.fillText("Daily Game \u2014 MTG", cx + iL + 8, cy + typeRelY + typH / 2, iW - 16);
+          ctx.fillText(getGameAverageText(Number(key)), cx + iL + 8, cy + typeRelY + typH / 2, iW - 16);
 
           // Score
           if (score) {
