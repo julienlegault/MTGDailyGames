@@ -650,7 +650,7 @@
         const avg = values.reduce((a, b) => a + b, 0) / values.length;
         const avgDisplay = Number.isInteger(avg) ? String(avg) : avg.toFixed(1);
 
-        return `My ${span} Day${span === 1 ? "" : "s"} Average: ${avgDisplay}`;
+        return `My ${span} Day Average: ${avgDisplay}`;
       }
 
       function copyScoresText() {
