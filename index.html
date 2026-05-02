@@ -901,7 +901,10 @@
             scoreEl.textContent = score !== null ? score : "Could not read score — please paste the complete result text from the game.";
             textBox.append(scoreEl);
             requestAnimationFrame(() => fitScoreText(scoreEl, textBox));
-            if (score !== null) saveScore(index, score, averageValue);
+            if (score !== null) {
+              saveScore(index, score, averageValue);
+              typeText.textContent = getGameAverageText(index);
+            }
           });
           textBox.append(tapInput, tapSubmit);
           return true;
