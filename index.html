@@ -53,8 +53,7 @@
             { "@type": "ListItem", "position": 4, "name": "EDHREC Crossword", "url": "https://edhrec.com/games/crossword" },
             { "@type": "ListItem", "position": 5, "name": "EDHRankle", "url": "https://edhrankle.com/daily" },
             { "@type": "ListItem", "position": 6, "name": "Guess the Magic Card", "url": "https://guessthemagiccard.com/" },
-            { "@type": "ListItem", "position": 7, "name": "Magicdoku", "url": "https://magicdoku.web.app/index.html" },
-            { "@type": "ListItem", "position": 8, "name": "Card Clash Synergy", "url": "https://cardclashgames.com/synergy" }
+            { "@type": "ListItem", "position": 7, "name": "Magicdoku", "url": "https://magicdoku.web.app/index.html" }
           ]
         }
       ]
@@ -508,9 +507,50 @@
       const HISTORY_KEY = "mtgdg_history";
       const MAX_HISTORY_DAYS = 30;
 
+      // Ordered list of game titles as they existed when scores were stored by numeric index.
+      // Used only to migrate old localStorage entries to the new title-based format.
+      const LEGACY_GAME_ORDER = [
+        "Spellify",
+        "Enchant Worldle",
+        "Asmrandle",
+        "EDHREC Crossword",
+        "Commander Codex",
+        "EDHRankle",
+        "Guess the Magic Card",
+        "Magicdoku",
+        "Card Clash Synergy",
+        "Moxle",
+        "Possibility Storm",
+        "MTG Nexus",
+        "Card Gourmet",
+      ];
+
+      // Converts a scores object whose keys are numeric array indices (old format) to
+      // one keyed by game title (new format). Entries for removed games are silently dropped.
+      function migrateScoresToTitleKeys(scores) {
+        const migrated = {};
+        for (const [k, v] of Object.entries(scores)) {
+          if (/^\d+$/.test(k)) {
+            const title = LEGACY_GAME_ORDER[Number(k)];
+            if (title && dailyGames.find(g => g.title === title)) {
+              migrated[title] = v;
+            }
+          } else {
+            migrated[k] = v;
+          }
+        }
+        return migrated;
+      }
+
       function loadDayScores(dateStr) {
         try {
-          return JSON.parse(localStorage.getItem("mtgdg_" + dateStr)) || {};
+          const raw = JSON.parse(localStorage.getItem("mtgdg_" + dateStr)) || {};
+          if (Object.keys(raw).some(k => /^\d+$/.test(k))) {
+            const migrated = migrateScoresToTitleKeys(raw);
+            localStorage.setItem("mtgdg_" + dateStr, JSON.stringify(migrated));
+            return migrated;
+          }
+          return raw;
         } catch {
           return {};
         }
@@ -522,7 +562,8 @@
 
       function saveScore(index, score, averageValue) {
         const scores = loadScores();
-        scores[index] = { score, url: dailyGames[index].url, averageValue: averageValue ?? null };
+        const game = dailyGames[index];
+        scores[game.title] = { score, url: game.url, averageValue: averageValue ?? null };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
         updateHistory(getGameDay());
         updateShareBar(scores);
@@ -580,19 +621,10 @@
 
       function extractAverageValueFromRaw(raw, gameTitle) {
         const BOX_EMOJI_CLASS = "[\\u{1F7E5}-\\u{1F7EB}\\u{2B1B}\\u{2B1C}]";
-        const BOX_EMOJI_LINE_RE = new RegExp(`^${BOX_EMOJI_CLASS}+$`, "u");
         const BOX_EMOJI_RE = new RegExp(BOX_EMOJI_CLASS, "gu");
 
         function countEmojiRows(text) {
           return text.split("\n").filter(line => /\p{Extended_Pictographic}/u.test(line)).length;
-        }
-        // Counts lines containing only colored large-square emojis:
-        // 🟥–🟫 (U+1F7E5–U+1F7EB) and ⬛⬜ (U+2B1B–U+2B1C).
-        function countColoredBoxRows(text) {
-          return text.split("\n").filter(line => {
-            const trimmed = line.trim();
-            return trimmed.length > 0 && BOX_EMOJI_LINE_RE.test(trimmed);
-          }).length;
         }
         function countNonGreyBoxes(text) {
           const boxes = text.match(BOX_EMOJI_RE) || [];
@@ -628,8 +660,6 @@
             const match = raw.match(/(\d+(?:\.\d+)?)\s*%/);
             return match ? parseFloat(match[1]) : null;
           }
-          case "Card Clash Synergy":
-            return countColoredBoxRows(raw) || null;
           case "Moxle":
             return countEmojiRows(raw) || null;
           case "Card Gourmet":
@@ -639,8 +669,7 @@
         }
       }
 
-      function getGameAverageText(gameIndex) {
-        const game = dailyGames[gameIndex];
+      function getGameAverageText(game) {
         if (!game || game.scoreType === "none") return "Daily Game \u2014 MTG";
 
         const history = loadHistory();
@@ -650,7 +679,7 @@
         const scoredDates = [];
         for (const dateStr of history) {
           const dayScores = loadDayScores(dateStr);
-          const entry = dayScores[gameIndex];
+          const entry = dayScores[game.title];
           if (entry && entry.averageValue != null) {
             values.push(entry.averageValue);
             scoredDates.push(dateStr);
@@ -673,8 +702,9 @@
 
       function copyScoresText() {
         const scores = loadScores();
-        const sortedKeys = Object.keys(scores).sort((a, b) => Number(a) - Number(b));
-        const parts = sortedKeys.map((idx) => `${scores[idx].score}\n${scores[idx].url}`);
+        const parts = dailyGames
+          .filter(game => scores[game.title])
+          .map(game => `${scores[game.title].score}\n${scores[game.title].url}`);
         const text = `${getGameDayLabel()}\nhttps://mtgdailygames.com\n\n${parts.join("\n\n")}`;
         navigator.clipboard.writeText(text).catch(() => {
           const ta = document.createElement("textarea");
@@ -743,13 +773,6 @@
           url: "https://magicdoku.web.app/index.html",
           scoreType: "emoji",
           image: "images/magicdoku.png",
-        },
-        {
-          title: "Card Clash Synergy",
-          description: "Test your MTG deck-building and synergy intuition.",
-          url: "https://cardclashgames.com/synergy",
-          scoreType: "emoji",
-          image: "images/synergy.png",
         },
         {
           title: "Moxle",
@@ -855,7 +878,7 @@
           if (game.scoreType === "none") return false;
           if (textBox.classList.contains("has-form")) return false; // already showing
           const currentScores = loadScores();
-          if (currentScores[index]) return false; // score already recorded
+          if (currentScores[game.title]) return false; // score already recorded
 
           description.remove();
           textBox.classList.add("has-form");
@@ -910,7 +933,7 @@
             requestAnimationFrame(() => fitScoreText(scoreEl, textBox));
             if (score !== null) {
               saveScore(index, score, averageValue);
-              typeText.textContent = getGameAverageText(index);
+              typeText.textContent = getGameAverageText(game);
             }
           });
           textBox.append(tapInput, tapSubmit);
@@ -968,7 +991,7 @@
         typeLine.className = "card-type-line";
         const typeText = document.createElement("span");
         typeText.className = "card-type-text";
-        typeText.textContent = getGameAverageText(index);
+        typeText.textContent = getGameAverageText(game);
         typeLine.append(typeText);
 
         // Text box — grey textured, description
@@ -1027,7 +1050,7 @@
       if (Object.keys(initialScores).length > 0) {
         updateHistory(getGameDay());
       }
-      dailyGames.forEach((game, index) => createGameCard(game, index, initialScores[index]?.score ?? null));
+      dailyGames.forEach((game, index) => createGameCard(game, index, initialScores[game.title]?.score ?? null));
       updateShareBar(initialScores);
 
       // ── Image helpers ──
@@ -1105,8 +1128,8 @@
       // Renders the scores card grid onto a canvas and resolves with the PNG Blob.
       async function generateScoresImageBlob() {
         const scores = loadScores();
-        const sortedKeys = Object.keys(scores).sort((a, b) => Number(a) - Number(b));
-        if (sortedKeys.length === 0) return null;
+        const scoredGames = dailyGames.filter(g => scores[g.title]);
+        if (scoredGames.length === 0) return null;
 
         // ── Canvas layout constants ──
         const CARD_W  = 280;
@@ -1117,8 +1140,8 @@
         const HDR_H   = 44;  // height of the date label row above the cards
         const DPR     = 3;   // render at 3× for sharpness
 
-        const cols    = Math.min(sortedKeys.length, COLS);
-        const rows    = Math.ceil(sortedKeys.length / COLS);
+        const cols    = Math.min(scoredGames.length, COLS);
+        const rows    = Math.ceil(scoredGames.length / COLS);
         const cssW    = cols * CARD_W + (cols - 1) * GAP + PAD * 2;
         const cssH    = rows * CARD_H + (rows - 1) * GAP + PAD * 2 + HDR_H;
 
@@ -1146,9 +1169,8 @@
         const frameImg = cachedFrameImg;
 
         // Preload game images for all scored cards
-        await Promise.all(sortedKeys.map(async (key) => {
-          const game = dailyGames[Number(key)];
-          if (game && game.image && !cachedGameImgs[game.image]) {
+        await Promise.all(scoredGames.map(async (game) => {
+          if (game.image && !cachedGameImgs[game.image]) {
             cachedGameImgs[game.image] = await loadImage(game.image);
           }
         }));
@@ -1168,10 +1190,9 @@
         const typeRelY = iT + hdrH + artH;
         const textRelY = typeRelY + typH;
 
-        for (let i = 0; i < sortedKeys.length; i++) {
-          const key  = sortedKeys[i];
-          const { score } = scores[key];
-          const game = dailyGames[Number(key)];
+        for (let i = 0; i < scoredGames.length; i++) {
+          const game = scoredGames[i];
+          const { score } = scores[game.title];
 
           const col  = i % COLS;
           const row  = Math.floor(i / COLS);
@@ -1212,7 +1233,7 @@
           // Type line
           ctx.font      = `bold 9px 'Cinzel', Georgia, serif`;
           ctx.fillStyle = "#222";
-          ctx.fillText(getGameAverageText(Number(key)), cx + iL + 8, cy + typeRelY + typH / 2, iW - 16);
+          ctx.fillText(getGameAverageText(game), cx + iL + 8, cy + typeRelY + typH / 2, iW - 16);
 
           // Score
           if (score) {
