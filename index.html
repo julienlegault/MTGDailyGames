@@ -506,6 +506,7 @@
       const STORAGE_KEY = "mtgdg_" + getGameDay();
       const HISTORY_KEY = "mtgdg_history";
       const MAX_HISTORY_DAYS = 30;
+      const NUMERIC_KEY_RE = /^\d+$/;
 
       // Ordered list of game titles as they existed when scores were stored by numeric index.
       // Used only to migrate old localStorage entries to the new title-based format.
@@ -528,11 +529,12 @@
       // Converts a scores object whose keys are numeric array indices (old format) to
       // one keyed by game title (new format). Entries for removed games are silently dropped.
       function migrateScoresToTitleKeys(scores) {
+        const activeTitles = new Set(dailyGames.map(g => g.title));
         const migrated = {};
         for (const [k, v] of Object.entries(scores)) {
-          if (/^\d+$/.test(k)) {
+          if (NUMERIC_KEY_RE.test(k)) {
             const title = LEGACY_GAME_ORDER[Number(k)];
-            if (title && dailyGames.find(g => g.title === title)) {
+            if (title && activeTitles.has(title)) {
               migrated[title] = v;
             }
           } else {
@@ -545,7 +547,7 @@
       function loadDayScores(dateStr) {
         try {
           const raw = JSON.parse(localStorage.getItem("mtgdg_" + dateStr)) || {};
-          if (Object.keys(raw).some(k => /^\d+$/.test(k))) {
+          if (Object.keys(raw).some(k => NUMERIC_KEY_RE.test(k))) {
             const migrated = migrateScoresToTitleKeys(raw);
             localStorage.setItem("mtgdg_" + dateStr, JSON.stringify(migrated));
             return migrated;
