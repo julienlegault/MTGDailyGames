@@ -48,7 +48,7 @@
           "url": "https://mtgdailygames.com/",
           "itemListElement": [
             { "@type": "ListItem", "position": 1, "name": "Spellify", "url": "https://edhrec.com/games/spellify" },
-            { "@type": "ListItem", "position": 2, "name": "Enchant Worldle", "url": "https://enchantworldle.com/" },
+            { "@type": "ListItem", "position": 2, "name": "Enchant Wordle", "url": "https://enchantworldle.com/" },
             { "@type": "ListItem", "position": 3, "name": "Asmrandle", "url": "https://asmrandle.com/" },
             { "@type": "ListItem", "position": 4, "name": "EDHREC Crossword", "url": "https://edhrec.com/games/crossword" },
             { "@type": "ListItem", "position": 5, "name": "EDHRankle", "url": "https://edhrankle.com/daily" },
@@ -471,8 +471,11 @@
 
     <script>
       // ── Link-click tracking (fire-and-forget) ──
-      function trackLinkClick() {
+      function trackLinkClick(slug) {
         fetch("https://api.counterapi.dev/v2/mtgdailygames/links-clicked/up").catch(() => {});
+        if (slug) {
+          fetch(`https://api.counterapi.dev/v2/mtgdailygames/${slug}/up`).catch(() => {});
+        }
       }
 
       // ── Daily reset at 1 am New York time (handles EST/EDT automatically) ──
@@ -512,7 +515,7 @@
       // Used only to migrate old localStorage entries to the new title-based format.
       const LEGACY_GAME_ORDER = [
         "Spellify",
-        "Enchant Worldle",
+        "Enchant Wordle",
         "Asmrandle",
         "EDHREC Crossword",
         "Commander Codex",
@@ -541,6 +544,10 @@
             migrated[k] = v;
           }
         }
+        if (migrated["Enchant Worldle"] && !migrated["Enchant Wordle"]) {
+          migrated["Enchant Wordle"] = migrated["Enchant Worldle"];
+        }
+        delete migrated["Enchant Worldle"];
         return migrated;
       }
 
@@ -645,7 +652,7 @@
             }
             return null;
           }
-          case "Enchant Worldle":
+          case "Enchant Wordle":
             return countEmojiRows(raw) || null;
           case "Asmrandle": {
             const sparkles = (raw.match(/\u2728/gu) || []).length;
@@ -726,13 +733,15 @@
           url: "https://edhrec.com/games/spellify",
           scoreType: "emoji",
           image: "images/spellify.png",
+          slug: "spellify",
         },
         {
-          title: "Enchant Worldle",
+          title: "Enchant Wordle",
           description: "A play on Wordle, yellow means close green means correct.",
           url: "https://enchantworldle.com/",
           scoreType: "emoji",
           image: "images/enchantWordle.png",
+          slug: "enchant-wordle",
         },
         {
           title: "Asmrandle",
@@ -740,6 +749,7 @@
           url: "https://asmrandle.com/",
           scoreType: "emoji",
           image: "images/asmrandle.png",
+          slug: "asmrandle",
         },
         {
           title: "EDHREC Crossword",
@@ -747,6 +757,7 @@
           url: "https://edhrec.com/games/crossword",
           scoreType: "none",
           image: "images/edhrecCrossword.png",
+          slug: "edhrec-crossword",
         },
         {
           title: "Commander Codex",
@@ -754,6 +765,7 @@
           url: "https://commandercodex.com/",
           scoreType: "emoji",
           image: "images/commanderCodex.png",
+          slug: "commander-codex",
         },
         {
           title: "EDHRankle",
@@ -761,6 +773,7 @@
           url: "https://edhrankle.com/daily",
           scoreType: "none",
           image: "images/edhrankle.png",
+          slug: "edhrankle",
         },
         {
           title: "Guess the Magic Card",
@@ -768,6 +781,7 @@
           url: "https://guessthemagiccard.com/",
           scoreType: "emoji",
           image: "images/guessTheMagicCard.png",
+          slug: "guess-the-magic-card",
         },
         {
           title: "Magicdoku",
@@ -775,6 +789,7 @@
           url: "https://magicdoku.web.app/index.html",
           scoreType: "emoji",
           image: "images/magicdoku.png",
+          slug: "magicdoku",
         },
         {
           title: "Moxle",
@@ -782,6 +797,7 @@
           url: "https://moxfield.com/moxle",
           scoreType: "emoji",
           image: "images/moxle.png",
+          slug: "moxle",
         },
         {
           title: "Possibility Storm",
@@ -789,6 +805,7 @@
           url: "https://www.possibilitystorm.com/",
           scoreType: "none",
           image: "images/possibilityStorm.png",
+          slug: "possibility-storm",
         },
         {
           title: "MTG Nexus",
@@ -797,6 +814,7 @@
           scoreType: "none",
           image: "images/mtgnexus.png",
           skipAvailabilityCheck: true,
+          slug: "mtg-nexus",
         },
         {
           title: "Card Gourmet",
@@ -804,6 +822,7 @@
           url: "https://games.cardgourmet.com/",
           scoreType: "emoji",
           image: "images/cardgourmet.png",
+          slug: "card-gourmet",
         },
       ];
 
@@ -947,7 +966,7 @@
           if (e.target.closest(".card-text-box")) return; // text box handles its own clicks
           if (e.target.closest("a")) return;              // card-name <a> handles its own navigation — avoid double window.open
           window.open(game.url, "_blank", "noopener,noreferrer");
-          trackLinkClick();
+          trackLinkClick(game.slug);
           maybeShowScoreForm();
         });
 
@@ -964,7 +983,7 @@
         cardName.target = "_blank";
         cardName.rel = "noopener noreferrer";
         cardName.textContent = game.title;
-        cardName.addEventListener("click", () => trackLinkClick());
+        cardName.addEventListener("click", () => trackLinkClick(game.slug));
         header.append(cardName);
 
         // Art area — extended art, full-bleed, no blur
@@ -1013,7 +1032,7 @@
           if (maybeShowScoreForm()) return;
           // Description or stored-score is showing — navigate to the game
           window.open(game.url, "_blank", "noopener,noreferrer");
-          trackLinkClick();
+          trackLinkClick(game.slug);
         });
 
         // If a score was stored for today, display it immediately
