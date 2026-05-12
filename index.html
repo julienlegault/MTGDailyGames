@@ -48,7 +48,7 @@
           "url": "https://mtgdailygames.com/",
           "itemListElement": [
             { "@type": "ListItem", "position": 1, "name": "Spellify", "url": "https://edhrec.com/games/spellify" },
-            { "@type": "ListItem", "position": 2, "name": "Enchant Worldle", "url": "https://enchantworldle.com/" },
+            { "@type": "ListItem", "position": 2, "name": "Enchant Wordle", "url": "https://enchantworldle.com/" },
             { "@type": "ListItem", "position": 3, "name": "Asmrandle", "url": "https://asmrandle.com/" },
             { "@type": "ListItem", "position": 4, "name": "EDHREC Crossword", "url": "https://edhrec.com/games/crossword" },
             { "@type": "ListItem", "position": 5, "name": "EDHRankle", "url": "https://edhrankle.com/daily" },
@@ -515,7 +515,7 @@
       // Used only to migrate old localStorage entries to the new title-based format.
       const LEGACY_GAME_ORDER = [
         "Spellify",
-        "Enchant Worldle",
+        "Enchant Wordle",
         "Asmrandle",
         "EDHREC Crossword",
         "Commander Codex",
@@ -544,6 +544,10 @@
             migrated[k] = v;
           }
         }
+        if (migrated["Enchant Worldle"] && !migrated["Enchant Wordle"]) {
+          migrated["Enchant Wordle"] = migrated["Enchant Worldle"];
+        }
+        delete migrated["Enchant Worldle"];
         return migrated;
       }
 
@@ -648,7 +652,7 @@
             }
             return null;
           }
-          case "Enchant Worldle":
+          case "Enchant Wordle":
             return countEmojiRows(raw) || null;
           case "Asmrandle": {
             const sparkles = (raw.match(/\u2728/gu) || []).length;
@@ -732,7 +736,7 @@
           slug: "spellify",
         },
         {
-          title: "Enchant Worldle",
+          title: "Enchant Wordle",
           description: "A play on Wordle, yellow means close green means correct.",
           url: "https://enchantworldle.com/",
           scoreType: "emoji",
