@@ -920,7 +920,7 @@
       async function fetchGameClickCount(slug) {
         try {
           const encodedSlug = encodeURIComponent(slug);
-          const res = await fetch(`https://api.counterapi.dev/v2/mtgdailygames/${encodedSlug}`, { cache: "no-store" });
+          const res = await fetch(`https://api.counterapi.dev/v2/mtgdailygames/${encodedSlug}`);
           if (!res.ok) return null;
           const payload = await res.json();
           return getCounterValue(payload);
@@ -941,9 +941,8 @@
 
       async function markMostPopularGame() {
         const counts = await Promise.all(
-          dailyGames.map(async (game, index) => ({
+          dailyGames.map(async (game) => ({
             game,
-            index,
             count: await fetchGameClickCount(game.slug),
           })),
         );
