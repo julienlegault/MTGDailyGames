@@ -938,7 +938,7 @@
         if (!card || card.querySelector(".most-popular-badge")) return;
         const badge = document.createElement("span");
         badge.className = "most-popular-badge";
-        badge.textContent = "Most<br>Popular!";
+        badge.innerHTML = "Most<br>Popular!";
         badge.setAttribute("aria-hidden", "true");
         card.appendChild(badge);
       }
