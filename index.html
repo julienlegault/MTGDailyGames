@@ -493,10 +493,14 @@
 
     <script>
       // ── Link-click tracking (fire-and-forget) ──
+      const COUNTER_API_BASE_URL = "https://api.counterapi.dev/v2";
+      const COUNTER_API_NAMESPACE = "mtgdailygames";
+
       function trackLinkClick(slug) {
-        fetch("https://api.counterapi.dev/v2/mtgdailygames/links-clicked/up").catch(() => {});
+        fetch(`${COUNTER_API_BASE_URL}/${COUNTER_API_NAMESPACE}/links-clicked/up`).catch(() => {});
         if (slug) {
-          fetch(`https://api.counterapi.dev/v2/mtgdailygames/${slug}/up`).catch(() => {});
+          const encodedSlug = encodeURIComponent(slug);
+          fetch(`${COUNTER_API_BASE_URL}/${COUNTER_API_NAMESPACE}/${encodedSlug}/up`).catch(() => {});
         }
       }
 
@@ -920,7 +924,7 @@
       async function fetchGameClickCount(slug) {
         try {
           const encodedSlug = encodeURIComponent(slug);
-          const res = await fetch(`https://api.counterapi.dev/v2/mtgdailygames/${encodedSlug}`);
+          const res = await fetch(`${COUNTER_API_BASE_URL}/${COUNTER_API_NAMESPACE}/${encodedSlug}`);
           if (!res.ok) return null;
           const payload = await res.json();
           return getCounterValue(payload);
