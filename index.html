@@ -919,7 +919,8 @@
 
       async function fetchGameClickCount(slug) {
         try {
-          const res = await fetch(`https://api.counterapi.dev/v2/mtgdailygames/${slug}`, { cache: "no-store" });
+          const encodedSlug = encodeURIComponent(slug);
+          const res = await fetch(`https://api.counterapi.dev/v2/mtgdailygames/${encodedSlug}`, { cache: "no-store" });
           if (!res.ok) return null;
           const payload = await res.json();
           return getCounterValue(payload);
@@ -948,7 +949,7 @@
         );
         const ranked = counts.filter(entry => entry.count !== null);
         if (ranked.length === 0) return;
-        ranked.sort((a, b) => (b.count - a.count) || (a.index - b.index));
+        ranked.sort((a, b) => (b.count - a.count) || a.game.slug.localeCompare(b.game.slug));
         addMostPopularBadge(ranked[0].game.slug);
       }
 
