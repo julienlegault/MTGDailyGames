@@ -173,6 +173,24 @@
         outline: none;
       }
 
+      .most-popular-badge {
+        position: absolute;
+        top: 6%;
+        right: -16%;
+        transform: rotate(45deg);
+        font-family: "Crimson Text", Georgia, "Times New Roman", serif;
+        font-size: 0.82rem;
+        font-weight: 700;
+        line-height: 1;
+        color: #ffd700;
+        -webkit-text-stroke: 1px #000;
+        paint-order: stroke fill;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+        white-space: nowrap;
+        pointer-events: none;
+        z-index: 4;
+      }
+
       /* ══ Inline result form — shown inside the text box after the card is clicked ══ */
       .card-text-box.has-form {
         display: flex;
@@ -377,6 +395,10 @@
       @media (max-width: 599px) {
         .card-name {
           font-size: 0.68rem;
+        }
+
+        .most-popular-badge {
+          font-size: 0.7rem;
         }
 
         .card-description {
@@ -829,6 +851,7 @@
       const fallbackGradient = "linear-gradient(140deg, #2f4778, #481f56)";
       const AVAILABILITY_CHECK_TIMEOUT = 10000;
       const gamesContainer = document.getElementById("games");
+      const cardBySlug = new Map();
 
       // Match emoji sequences: base Extended_Pictographic + optional variation selector
       // (U+FE00–FE0F), combining enclosing keycap (U+20E3), skin-tone modifier
@@ -880,6 +903,55 @@
         }
       }
 
+      function getCounterValue(payload) {
+        const values = [
+          payload?.count,
+          payload?.value,
+          payload?.data?.count,
+          payload?.data?.value,
+        ];
+        for (const value of values) {
+          const num = Number(value);
+          if (Number.isFinite(num)) return num;
+        }
+        return null;
+      }
+
+      async function fetchGameClickCount(slug) {
+        try {
+          const res = await fetch(`https://api.counterapi.dev/v2/mtgdailygames/${slug}`, { cache: "no-store" });
+          if (!res.ok) return null;
+          const payload = await res.json();
+          return getCounterValue(payload);
+        } catch {
+          return null;
+        }
+      }
+
+      function addMostPopularBadge(slug) {
+        const card = cardBySlug.get(slug);
+        if (!card || card.querySelector(".most-popular-badge")) return;
+        const badge = document.createElement("span");
+        badge.className = "most-popular-badge";
+        badge.textContent = "Most Popular!";
+        badge.setAttribute("aria-hidden", "true");
+        card.appendChild(badge);
+      }
+
+      async function markMostPopularGame() {
+        const counts = await Promise.all(
+          dailyGames.map(async (game, index) => ({
+            game,
+            index,
+            count: await fetchGameClickCount(game.slug),
+          })),
+        );
+        const ranked = counts.filter(entry => entry.count !== null);
+        if (ranked.length === 0) return;
+        ranked.sort((a, b) => (b.count - a.count) || (a.index - b.index));
+        addMostPopularBadge(ranked[0].game.slug);
+      }
+
       function createGameCard(game, index, storedScore) {
         // ── Item: grid cell containing the slot ──
         const item = document.createElement("div");
@@ -892,6 +964,7 @@
         const card = document.createElement("div");
         card.className = "game-card";
         card.style.setProperty("--card-image", `url("${game.image}")`);
+        cardBySlug.set(game.slug, card);
 
         // Shows the score-entry form in the text box when conditions are met.
         // Returns true if the form was newly shown, false if conditions were not met.
@@ -1073,6 +1146,7 @@
       }
       dailyGames.forEach((game, index) => createGameCard(game, index, initialScores[game.title]?.score ?? null));
       updateShareBar(initialScores);
+      markMostPopularGame();
 
       // ── Image helpers ──
       function loadImage(src) {
