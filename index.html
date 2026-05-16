@@ -77,6 +77,8 @@
         --footer-bg: rgba(0, 0, 0, 0.9);
         --footer-clearance: 4.25rem;
         --card-min-width: 120px;
+        --popular-badge-top: 6%;
+        --popular-badge-right: -16%;
         /* MTG card frame palette (artifact silver) */
         --frame-dark: #101010;
         --frame-silver: linear-gradient(180deg, #dcdcd4 0%, #c8c8c0 45%, #b8b8b0 100%);
@@ -175,8 +177,8 @@
 
       .most-popular-badge {
         position: absolute;
-        top: 6%;
-        right: -16%;
+        top: var(--popular-badge-top);
+        right: var(--popular-badge-right);
         transform: rotate(45deg);
         font-family: "Crimson Text", Georgia, "Times New Roman", serif;
         font-size: 0.82rem;
@@ -944,16 +946,24 @@
       }
 
       async function markMostPopularGame() {
-        const counts = await Promise.all(
-          dailyGames.map(async (game) => ({
-            game,
-            count: await fetchGameClickCount(game.slug),
-          })),
-        );
-        const ranked = counts.filter(entry => entry.count !== null);
-        if (ranked.length === 0) return;
-        ranked.sort((a, b) => (b.count - a.count) || a.game.slug.localeCompare(b.game.slug));
-        addMostPopularBadge(ranked[0].game.slug);
+        let maxCount = -Infinity;
+        const topSlugs = [];
+
+        for (const game of dailyGames) {
+          const count = await fetchGameClickCount(game.slug);
+          if (count === null) continue;
+          if (count > maxCount) {
+            maxCount = count;
+            topSlugs.length = 0;
+            topSlugs.push(game.slug);
+          } else if (count === maxCount) {
+            topSlugs.push(game.slug);
+          }
+        }
+
+        if (topSlugs.length === 0) return;
+        topSlugs.sort((a, b) => a.localeCompare(b));
+        addMostPopularBadge(topSlugs[0]);
       }
 
       function createGameCard(game, index, storedScore) {
