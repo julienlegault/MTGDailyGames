@@ -77,6 +77,8 @@
         --footer-bg: rgba(0, 0, 0, 0.9);
         --footer-clearance: 4.25rem;
         --card-min-width: 120px;
+        --popular-badge-top: 6%;
+        --popular-badge-right: -16%;
         /* MTG card frame palette (artifact silver) */
         --frame-dark: #101010;
         --frame-silver: linear-gradient(180deg, #dcdcd4 0%, #c8c8c0 45%, #b8b8b0 100%);
@@ -171,6 +173,24 @@
           0 0 0 1px rgba(255, 255, 255, 0.13),
           0 20px 64px rgba(0, 0, 0, 0.9);
         outline: none;
+      }
+
+      .most-popular-badge {
+        position: absolute;
+        top: var(--popular-badge-top);
+        right: var(--popular-badge-right);
+        transform: rotate(45deg);
+        font-family: "Crimson Text", Georgia, "Times New Roman", serif;
+        font-size: 0.82rem;
+        font-weight: 700;
+        line-height: 1;
+        color: #ffd700;
+        -webkit-text-stroke: 1px #000;
+        paint-order: stroke fill;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+        white-space: nowrap;
+        pointer-events: none;
+        z-index: 4;
       }
 
       /* ══ Inline result form — shown inside the text box after the card is clicked ══ */
@@ -379,6 +399,10 @@
           font-size: 0.68rem;
         }
 
+        .most-popular-badge {
+          font-size: 0.7rem;
+        }
+
         .card-description {
           font-size: 0.7rem;
           line-height: 1.3;
@@ -471,10 +495,14 @@
 
     <script>
       // ── Link-click tracking (fire-and-forget) ──
+      const COUNTER_API_BASE_URL = "https://api.counterapi.dev/v2";
+      const COUNTER_API_NAMESPACE = "mtgdailygames";
+
       function trackLinkClick(slug) {
-        fetch("https://api.counterapi.dev/v2/mtgdailygames/links-clicked/up").catch(() => {});
+        fetch(`${COUNTER_API_BASE_URL}/${COUNTER_API_NAMESPACE}/links-clicked/up`).catch(() => {});
         if (slug) {
-          fetch(`https://api.counterapi.dev/v2/mtgdailygames/${slug}/up`).catch(() => {});
+          const encodedSlug = encodeURIComponent(slug);
+          fetch(`${COUNTER_API_BASE_URL}/${COUNTER_API_NAMESPACE}/${encodedSlug}/up`).catch(() => {});
         }
       }
 
@@ -829,6 +857,7 @@
       const fallbackGradient = "linear-gradient(140deg, #2f4778, #481f56)";
       const AVAILABILITY_CHECK_TIMEOUT = 10000;
       const gamesContainer = document.getElementById("games");
+      const cardBySlug = new Map();
 
       // Match emoji sequences: base Extended_Pictographic + optional variation selector
       // (U+FE00–FE0F), combining enclosing keycap (U+20E3), skin-tone modifier
@@ -880,6 +909,63 @@
         }
       }
 
+      function getCounterValue(payload) {
+        const values = [
+          payload?.count,
+          payload?.value,
+          payload?.data?.count,
+          payload?.data?.value,
+        ];
+        for (const value of values) {
+          const num = Number(value);
+          if (Number.isFinite(num)) return num;
+        }
+        return null;
+      }
+
+      async function fetchGameClickCount(slug) {
+        try {
+          const encodedSlug = encodeURIComponent(slug);
+          const res = await fetch(`${COUNTER_API_BASE_URL}/${COUNTER_API_NAMESPACE}/${encodedSlug}`);
+          if (!res.ok) return null;
+          const payload = await res.json();
+          return getCounterValue(payload);
+        } catch {
+          return null;
+        }
+      }
+
+      function addMostPopularBadge(slug) {
+        const card = cardBySlug.get(slug);
+        if (!card || card.querySelector(".most-popular-badge")) return;
+        const badge = document.createElement("span");
+        badge.className = "most-popular-badge";
+        badge.textContent = "Most Popular!";
+        badge.setAttribute("aria-hidden", "true");
+        card.appendChild(badge);
+      }
+
+      async function markMostPopularGame() {
+        let maxCount = -Infinity;
+        const topSlugs = [];
+
+        for (const game of dailyGames) {
+          const count = await fetchGameClickCount(game.slug);
+          if (count === null) continue;
+          if (count > maxCount) {
+            maxCount = count;
+            topSlugs.length = 0;
+            topSlugs.push(game.slug);
+          } else if (count === maxCount) {
+            topSlugs.push(game.slug);
+          }
+        }
+
+        if (topSlugs.length === 0) return;
+        topSlugs.sort((a, b) => a.localeCompare(b));
+        addMostPopularBadge(topSlugs[0]);
+      }
+
       function createGameCard(game, index, storedScore) {
         // ── Item: grid cell containing the slot ──
         const item = document.createElement("div");
@@ -892,6 +978,7 @@
         const card = document.createElement("div");
         card.className = "game-card";
         card.style.setProperty("--card-image", `url("${game.image}")`);
+        cardBySlug.set(game.slug, card);
 
         // Shows the score-entry form in the text box when conditions are met.
         // Returns true if the form was newly shown, false if conditions were not met.
@@ -1073,6 +1160,7 @@
       }
       dailyGames.forEach((game, index) => createGameCard(game, index, initialScores[game.title]?.score ?? null));
       updateShareBar(initialScores);
+      markMostPopularGame();
 
       // ── Image helpers ──
       function loadImage(src) {
