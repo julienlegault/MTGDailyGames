@@ -911,10 +911,8 @@
 
       function getCounterValue(payload) {
         const values = [
-          payload?.count,
-          payload?.value,
-          payload?.data?.count,
-          payload?.data?.value,
+          payload?.up_count,
+          payload?.data?.up_count,
         ];
         for (const value of values) {
           const num = Number(value);
