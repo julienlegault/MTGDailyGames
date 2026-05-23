@@ -690,6 +690,11 @@
           }
           case "Commander Codex":
             return countEmojiRows(raw) || null;
+          case "EDHRankle": {
+            const solvedMatch = raw.match(/solved in\s+(\d+)\s+guesses?/i);
+            if (solvedMatch) return Number(solvedMatch[1]);
+            return countEmojiRows(raw) || null;
+          }
           case "Guess the Magic Card": {
             return countNonGreyBoxes(raw) || null;
           }
@@ -799,7 +804,7 @@
           title: "EDHRankle",
           description: "Rank 10 commanders from most popular to least.",
           url: "https://edhrankle.com/daily",
-          scoreType: "none",
+          scoreType: "emoji",
           image: "images/edhrankle.png",
           slug: "edhrankle",
         },
