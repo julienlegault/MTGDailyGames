@@ -683,10 +683,10 @@
           case "Enchant Wordle":
             return countEmojiRows(raw) || null;
           case "Asmrandle": {
-            const sparkles = (raw.match(/\u2728/gu) || []).length;
-            if (sparkles > 0) return sparkles;
-            const greens = (raw.match(/\uD83D\uDFE9/gu) || []).length;
-            return greens || null;
+            const hasAnyMarkers = /[🟥🟩✨]/u.test(raw);
+            if (!hasAnyMarkers) return null;
+            const reds = (raw.match(/🟥/gu) || []).length;
+            return Math.max(0, 10 - reds);
           }
           case "Commander Codex":
             return countEmojiRows(raw) || null;
