@@ -293,7 +293,7 @@
         flex: 1;
         min-height: 0;
         position: relative;
-        background-image: var(--card-image, linear-gradient(140deg, #2f4778, #481f56));
+        background-image: var(--card-image), linear-gradient(140deg, #2f4778, #481f56);
         background-size: cover;
         background-position: top center;
         overflow: hidden;
@@ -868,7 +868,6 @@
         },
       ];
 
-      const fallbackGradient = "linear-gradient(140deg, #2f4778, #481f56)";
       const AVAILABILITY_CHECK_TIMEOUT = 10000;
       const gamesContainer = document.getElementById("games");
       const cardBySlug = new Map();
@@ -989,7 +988,7 @@
 
         const card = document.createElement("div");
         card.className = "game-card";
-        card.style.setProperty("--card-image", `url("${game.image}"), ${fallbackGradient}`);
+        card.style.setProperty("--card-image", game.image ? `url("${game.image}")` : "none");
         cardBySlug.set(game.slug, card);
 
         // Shows the score-entry form in the text box when conditions are met.
