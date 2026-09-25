@@ -989,7 +989,7 @@
 
         const card = document.createElement("div");
         card.className = "game-card";
-        card.style.setProperty("--card-image", `url("${game.image}")`);
+        card.style.setProperty("--card-image", `url("${game.image}"), ${fallbackGradient}`);
         cardBySlug.set(game.slug, card);
 
         // Shows the score-entry form in the text box when conditions are met.
