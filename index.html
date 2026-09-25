@@ -53,7 +53,8 @@
             { "@type": "ListItem", "position": 4, "name": "EDHREC Crossword", "url": "https://edhrec.com/games/crossword" },
             { "@type": "ListItem", "position": 5, "name": "EDHRankle", "url": "https://edhrankle.com/daily" },
             { "@type": "ListItem", "position": 6, "name": "Guess the Magic Card", "url": "https://guessthemagiccard.com/" },
-            { "@type": "ListItem", "position": 7, "name": "Magicdoku", "url": "https://magicdoku.web.app/index.html" }
+            { "@type": "ListItem", "position": 7, "name": "Magicdoku", "url": "https://magicdoku.web.app/index.html" },
+            { "@type": "ListItem", "position": 8, "name": "Mana Matrix", "url": "https://cubecobra.com/manamatrix" }
           ]
         }
       ]
@@ -292,7 +293,7 @@
         flex: 1;
         min-height: 0;
         position: relative;
-        background-image: var(--card-image, linear-gradient(140deg, #2f4778, #481f56));
+        background-image: var(--card-image), linear-gradient(140deg, #2f4778, #481f56);
         background-size: cover;
         background-position: top center;
         overflow: hidden;
@@ -857,9 +858,16 @@
           image: "images/cardgourmet.png",
           slug: "card-gourmet",
         },
+        {
+          title: "Mana Matrix",
+          description: "Daily cube puzzle on Cube Cobra.",
+          url: "https://cubecobra.com/manamatrix",
+          scoreType: "none",
+          image: "images/manaMatrix.png",
+          slug: "mana-matrix",
+        },
       ];
 
-      const fallbackGradient = "linear-gradient(140deg, #2f4778, #481f56)";
       const AVAILABILITY_CHECK_TIMEOUT = 10000;
       const gamesContainer = document.getElementById("games");
       const cardBySlug = new Map();
@@ -980,7 +988,7 @@
 
         const card = document.createElement("div");
         card.className = "game-card";
-        card.style.setProperty("--card-image", `url("${game.image}")`);
+        card.style.setProperty("--card-image", game.image ? `url("${game.image}")` : "none");
         cardBySlug.set(game.slug, card);
 
         // Shows the score-entry form in the text box when conditions are met.
